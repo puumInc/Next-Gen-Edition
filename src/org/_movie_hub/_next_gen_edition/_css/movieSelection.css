@@ -1,0 +1,128 @@
+.title {
+    -fx-font-family: 'Montserrat Medium';
+    -fx-font-size: 24px;
+}
+
+.buttons_with_white_text_and_yellow_border_line {
+    -fx-font-family: "Fira Sans";
+    -fx-font-size: 14px;
+}
+
+.scroll-pane {
+    -fx-background-color: #323232;
+}
+
+.scroll-bar:horizontal,
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:horizontal.track,
+.scroll-bar:vertical.track {
+    -fx-background-color: transparent;
+    -fx-border-color: #4D4D4D;
+    -fx-background-radius: 0em;
+}
+
+.scroll-bar:horizontal .thumb,
+.scroll-bar:vertical .thumb {
+    -fx-background-color: rgb(255, 255, 255);
+    -fx-background-radius: 5em;
+}
+
+.scroll-bar:vertical {
+    -fx-pref-width: 14.5;
+    -fx-padding: 3;
+}
+
+.scroll-bar:horizontal {
+    -fx-pref-height: 14.5;
+    -fx-padding: 3;
+}
+
+.scroll-bar,
+.scroll-bar:pressed,
+.scroll-bar:focused {
+    -fx-font-size: 15;
+}
+
+.selecting_either_series_or_movie_button {
+    -fx-font-family: 'Montserrat Medium';
+    -fx-font-size: 18px;
+}
+
+.backButton {
+    -fx-font-family: 'Montserrat Semibold';
+    -fx-font-size: 16px;
+}
+
+.buttons_with_white_text_and_yellow_border_line,
+.selecting_either_series_or_movie_button,
+.backButton,
+#menu,
+.menu_options,
+.email_btn {
+    -fx-cursor: hand;
+}
+
+#orLabel,
+#orLabel2 {
+    -fx-font-family: 'Fira Sans';
+    -fx-font-size: 13px;
+}
+
+.about_title {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 24px;
+}
+
+.about_sub_title {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 16px;
+}
+
+#version {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 15px;
+}
+
+#purpose {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+}
+
+.about_text {
+    -fx-font-family: 'Fira Sans';
+    -fx-font-size: 15px;
+}
+
+#menu StackPane {
+    -fx-background-color: linear-gradient(#FFB900, #F0D801);
+}
+
+.menu_options {
+    -fx-font-family: 'Fira Sans';
+    -fx-font-size: 13px;
+}
+
+.email_btn {
+    -fx-font-family: 'Montserrat Semibold';
+    -fx-font-size: 18px;
+}
+
+#email_warn {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+}
+
+.actionSelection {
+    -fx-font-family: 'Montserrat Medium';
+    -fx-font-size: 18px;
+}
+
+#emptyListText {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 13px;
+}

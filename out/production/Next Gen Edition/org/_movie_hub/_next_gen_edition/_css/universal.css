@@ -1,0 +1,16 @@
+.input {
+    -fx-font-family: 'Fira Sans Medium';
+    -fx-font-size: 16px;
+    -fx-text-fill: #FFFFFF;
+    -fx-prompt-text-fill: rgb(179, 172, 117);
+}
+
+.root {
+    -fx-accent: #161616;
+    -fx-focus-color: #FFFFFF;
+}
+
+
+/* .text-field:empty  .text{
+    -fx-text-fill: #cc2b2b;
+} */

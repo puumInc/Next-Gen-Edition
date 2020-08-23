@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--suppress JavaFxDefaultTag -->
+
+<?import com.jfoenix.controls.JFXButton?>
+<?import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="47.0" prefWidth="890.0" style="-fx-background-color: #323232;" stylesheets="@../_css/cart.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org._movie_hub._next_gen_edition._controller.SelectedMedia">
+   <children>
+      <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="44.0" prefWidth="890.0">
+         <children>
+            <Label fx:id="pathTF" layoutX="14.0" layoutY="12.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="19.0" prefWidth="690.0" styleClass="labelText" text="Label" textFill="WHITE" wrapText="true">
+               <tooltip>
+                  <Tooltip styleClass="tooltipText" />
+               </tooltip>
+            </Label>
+            <Label fx:id="sizeTF" alignment="CENTER" layoutX="732.0" layoutY="12.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="19.0" prefWidth="92.0" styleClass="fileSize" text="Label" textFill="#fae800" wrapText="true">
+               <tooltip>
+                  <Tooltip styleClass="tooltipText" text="One Movie file" />
+               </tooltip>
+            </Label>
+            <JFXButton contentDisplay="GRAPHIC_ONLY" layoutX="844.0" layoutY="6.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onAction="#delete_directory" prefHeight="39.0" prefWidth="36.0" ripplerFill="#653939" style="-fx-background-radius: 0px;" AnchorPane.bottomAnchor="7.0" AnchorPane.topAnchor="6.0">
+               <graphic>
+                  <MaterialDesignIconView fill="#e42828" glyphName="WINDOW_CLOSE" size="20" />
+               </graphic>
+               <tooltip>
+                  <Tooltip styleClass="tooltipText" text="Click to remove" />
+               </tooltip>
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+            </JFXButton>
+         </children>
+      </AnchorPane>
+   </children>
+</StackPane>
