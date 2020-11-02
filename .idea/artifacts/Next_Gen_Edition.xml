@@ -4,7 +4,7 @@
     <properties id="javafx-properties">
       <options>
         <option name="appClass" value="org._movie_hub._next_gen_edition.Main" />
-        <option name="description" value="Prototype Version" />
+        <option name="description" value="Movie shop edition" />
         <option name="enabledSigning" value="true" />
         <option name="htmlPlaceholderId" value="" />
         <option name="icons">
@@ -25,7 +25,7 @@
       <element id="directory" name="lib">
         <element id="library" level="application" name="AnimateFX-1.2.0" />
         <element id="library" level="application" name="annotations-17.0.0" />
-        <element id="library" level="application" name="commons-io-2.6_COPY_FILES_FROM_PLACE_TO_PLACE" />
+        <element id="library" level="application" name="FILE_STUFF" />
         <element id="library" level="application" name="controlsfx-8.40.11" />
         <element id="library" level="application" name="EMAIL" />
         <element id="library" level="application" name="fontawesomefx-8.9" />
@@ -35,6 +35,7 @@
         <element id="library" level="application" name="json-simple-3.0.2" />
         <element id="library" level="application" name="spark-core 2.9.1 maven" />
         <element id="library" level="application" name="SL4J" />
+        <element id="library" level="application" name="zxing from maven" />
       </element>
     </root>
   </artifact>

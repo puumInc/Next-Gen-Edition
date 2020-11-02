@@ -15,7 +15,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.net.URL;
@@ -40,14 +39,14 @@ public class Trailer extends Watchdog implements Initializable {
     @FXML
     void delete_directory(ActionEvent event) {
         final JsonElement jsonElement = new Gson().toJsonTree(pathTF.getParent().getParent().getId(), String.class);
-        final JsonArray jsonArray = get_app_details_as_object(new File(TRAILERS_JSON_FILE));
+        final JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
         for (JsonElement jsonElement1 : jsonArray) {
             if (jsonElement1.equals(jsonElement)) {
                 jsonArray.remove(jsonElement);
-                if (write_jsonArray_to_file(jsonArray, TRAILERS_JSON_FILE)) {
+                if (write_jsonArray_to_file(jsonArray, format_path_name_to_current_os(TRAILERS_JSON_FILE))) {
                     Home.listOfTrailerIds.remove(new File(myPath).getName());
                     final JsonArray jsonArray1 = make_array_from_map(Home.listOfTrailerIds);
-                    if (write_jsonArray_to_file(jsonArray1, TRAILER_KEY_JSON_FILE)) {
+                    if (write_jsonArray_to_file(jsonArray1, format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))) {
                         update_trailer_and_playlist_key();
                         VBox vBox = (VBox) pathTF.getParent().getParent().getParent();
                         Node currentNode = pathTF.getParent().getParent();
@@ -65,6 +64,7 @@ public class Trailer extends Watchdog implements Initializable {
                 break;
             }
         }
+        event.consume();
     }
 
     @Override
@@ -77,38 +77,38 @@ public class Trailer extends Watchdog implements Initializable {
         tooltip.setText(myPath);
         pathTF.setTooltip(tooltip);
         sizeTF.setTooltip(null);
-        sizeTF.setText(new SelectedMedia().format_file_or_directory_size(file));
+        sizeTF.setText(format_file_or_directory_size(file));
         final JsonArray jsonArray = make_array_from_map(Home.listOfTrailerIds);
-        if (write_jsonArray_to_file(jsonArray, TRAILER_KEY_JSON_FILE)) {
+        if (write_jsonArray_to_file(jsonArray, format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))) {
             update_trailer_and_playlist_key();
         }
         new Thread(check_my_path()).start();
     }
 
     @Contract(value = " -> new", pure = true)
-    private @NotNull Task<Object> check_my_path() {
+    private Task<Object> check_my_path() {
         return new Task<Object>() {
             @Override
             protected Object call() {
                 final File file = new File(myPath);
                 while (true) {
                     try {
-                        if (!file.exists()) {
-                            if (!pathTF.getText().contains("BROKEN")) {
+                        if (file.exists()) {
+                            if (!pathTF.getText().equals(file.getName())) {
                                 Platform.runLater(() -> {
-                                    pathTF.setText(pathTF.getText().concat("\t\t( * Path is BROKEN * )"));
-                                    sizeTF.setText(new SelectedMedia().format_file_or_directory_size(file));
+                                    pathTF.setText(file.getName());
+                                    sizeTF.setText(format_file_or_directory_size(file));
                                 });
                             }
                         } else {
-                            if (pathTF.getText().contains("BROKEN")) {
+                            if (pathTF.getText().equals(file.getName())) {
                                 Platform.runLater(() -> {
-                                    pathTF.setText(file.getName());
-                                    sizeTF.setText(new SelectedMedia().format_file_or_directory_size(file));
+                                    pathTF.setText(myPath.concat("\t\t( * Path is BROKEN * )"));
+                                    sizeTF.setText(format_file_or_directory_size(file));
                                 });
                             }
                         }
-                        Thread.sleep(100);
+                        Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         break;

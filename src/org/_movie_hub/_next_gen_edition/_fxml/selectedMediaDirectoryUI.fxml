@@ -4,11 +4,13 @@
 
 <?import com.jfoenix.controls.JFXButton?>
 <?import de.jensd.fx.glyphs.materialdesignicons.MaterialDesignIconView?>
-<?import javafx.scene.control.*?>
 <?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.StackPane?>
-<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="47.0" prefWidth="890.0" style="-fx-background-color: #323232;" stylesheets="@../_css/cart.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org._movie_hub._next_gen_edition._controller.SelectedMedia">
+
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="47.0" prefWidth="890.0" style="-fx-background-color: #323232;" stylesheets="@../_css/cart.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org._movie_hub._next_gen_edition._controller.SelectedFile">
    <children>
       <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="44.0" prefWidth="890.0">
          <children>
@@ -22,9 +24,9 @@
                   <Tooltip styleClass="tooltipText" text="One Movie file" />
                </tooltip>
             </Label>
-            <JFXButton contentDisplay="GRAPHIC_ONLY" layoutX="844.0" layoutY="6.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onAction="#delete_directory" prefHeight="39.0" prefWidth="36.0" ripplerFill="#653939" style="-fx-background-radius: 0px;" AnchorPane.bottomAnchor="7.0" AnchorPane.topAnchor="6.0">
+            <JFXButton contentDisplay="GRAPHIC_ONLY" layoutX="846.0" layoutY="-2.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" onAction="#delete_directory" prefHeight="47.0" prefWidth="44.0" ripplerFill="#653939" style="-fx-background-radius: 0px; -fx-background-color: #e42828;">
                <graphic>
-                  <MaterialDesignIconView fill="#e42828" glyphName="WINDOW_CLOSE" size="20" />
+                  <MaterialDesignIconView fill="WHITE" glyphName="PLAYLIST_REMOVE" size="20" />
                </graphic>
                <tooltip>
                   <Tooltip styleClass="tooltipText" text="Click to remove" />

@@ -24,6 +24,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -35,7 +38,6 @@ import org._movie_hub._next_gen_edition._custom.Email;
 import org._movie_hub._next_gen_edition._object.History;
 import org._movie_hub._next_gen_edition._object.Job;
 import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,7 +54,6 @@ import java.util.regex.Pattern;
  * @author Mandela aka puumInc
  */
 
-@SuppressWarnings("unused")
 public class Home extends Email implements Initializable {
 
     public final static HashMap<String, Job> listOfCopyThreads = new HashMap<>();
@@ -64,7 +65,6 @@ public class Home extends Email implements Initializable {
     protected final static List<String> listOfSelectedMovies = new ArrayList<>();
     protected final static List<String> listOfSelectedSeries = new ArrayList<>();
     public static HashMap<String, HashMap<String, String>> listOfTrailerIds;
-    protected final String EXTENSIONS_SUPPORTED_BY_VLC = ".asx:.dts:.gxf:.m2v:.m3u:.m4v:.mpeg1:.mpeg2:.mts:.mxf:.pls:.divx:.dv:.flv:.m1v:.m2ts:.mkv:.mov:.mpeg4:.ts:.vlc:.vob:.3g2:.avi:.mpeg:.mpg:.m4a:.3gp:.srt:.wmv:.asf:.mp4:.m4p";
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
     private String recentDirectory = "";
     private int moviesCount = 0;
@@ -151,6 +151,76 @@ public class Home extends Email implements Initializable {
     private VBox menuVBox;
 
     @FXML
+    void add_dragged_files(DragEvent dragEvent) {
+        try {
+            if (dragEvent.getGestureSource() != dragEvent && dragEvent.getDragboard().hasFiles()) {
+                /* allow for both copying and moving, whatever user chooses */
+                dragEvent.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+
+                /* let the source know whether the string was successfully
+                 * transferred and used
+                 * */
+                Dragboard dragboard = dragEvent.getDragboard();
+                boolean itsComplete = false;
+                if (dragboard.hasFiles()) {
+                    itsComplete = true;
+                }
+                dragEvent.setDropCompleted(itsComplete);
+            }
+            dragEvent.consume();
+        } catch (Exception e) {
+            e.printStackTrace();
+            programmer_error(e).show();
+            new Thread(write_stack_trace(e)).start();
+        }
+    }
+
+    @FXML
+    void check_files_being_dragged(DragEvent dragEvent) {
+        VBox myVBox = (VBox) dragEvent.getSource();
+        try {
+            Dragboard dragboard = dragEvent.getDragboard();
+            if (!dragboard.hasFiles()) {
+                dragEvent.consume();
+                return;
+            }
+            List<File> dragBoardFiles = dragboard.getFiles();
+            if (dragBoardFiles != null) {
+                List<File> fileList = new ArrayList<>();
+                List<File> folderList = new ArrayList<>();
+                for (File draggedFileOrFolder : dragBoardFiles) {
+                    if (draggedFileOrFolder.isFile()) {
+                        if (can_be_used_by_vlc(draggedFileOrFolder)) {
+                            fileList.add(draggedFileOrFolder);
+                        }
+                    } else if (draggedFileOrFolder.isDirectory()) {
+                        if (!the_file_or_folder_has_zero_bytes(draggedFileOrFolder)) {
+                            folderList.add(draggedFileOrFolder);
+                        }
+                    }
+                }
+                if (dragBoardFiles.size() > 0) {
+                    if (myVBox.equals(moviesBox)) {
+                        if (verify_selected_movie_files(fileList)) {
+                            add_movie_directory();
+                        }
+                    } else if (myVBox.equals(seriesBox)) {
+                        if (verify_selected_series_folders_files(folderList)) {
+                            add_series_directory();
+                        }
+                    }
+                }
+                dragboard.clear();
+            }
+            dragEvent.consume();
+        } catch (Exception e) {
+            e.printStackTrace();
+            programmer_error(e).show();
+            new Thread(write_stack_trace(e)).start();
+        }
+    }
+
+    @FXML
     void allow_to_copy_to_removable_drive(ActionEvent event) {
         final String TIME_IT_STARTED = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
         try {
@@ -158,6 +228,7 @@ public class Home extends Email implements Initializable {
             tasksPane.toFront();
             new FadeIn(tasksPane).play();
             if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty() && !Home.listOfCopyThreads.isEmpty()) {
+                event.consume();
                 return;
             } else if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty()) {
                 if (taskBox.getChildren().size() < 1) {
@@ -168,6 +239,7 @@ public class Home extends Email implements Initializable {
                     }
                     new Wobble(emptyListLbl).play();
                 }
+                event.consume();
                 return;
             } else {
                 if (jobPane.getOpacity() < 1) {
@@ -214,7 +286,7 @@ public class Home extends Email implements Initializable {
                                     history.setTimeWhenItStarted(TIME_IT_STARTED);
                                     history.setTimeWhenItStopped(END_TIME);
                                     history.setDate(get_date());
-                                    history.setJobName(job.getJobName().concat(" (COPY_2_DRIVE)"));
+                                    history.setJobName(job.getJobName().concat(" (Cp2D)"));
                                     history.setListOfMedia(new ArrayList<>());
                                     history.setStatus("CREATED");
                                     final List<String> objectList = job.getAllMediaPaths();
@@ -261,6 +333,7 @@ public class Home extends Email implements Initializable {
             tasksPane.toFront();
             new FadeIn(tasksPane).play();
             if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty() && !Home.listOfUploadThreads.isEmpty()) {
+                event.consume();
                 return;
             } else if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty()) {
                 if (taskBox.getChildren().size() < 1) {
@@ -271,6 +344,7 @@ public class Home extends Email implements Initializable {
                     }
                     new Wobble(emptyListLbl).play();
                 }
+                event.consume();
                 return;
             } else {
                 if (jobPane.getOpacity() < 1) {
@@ -308,7 +382,7 @@ public class Home extends Email implements Initializable {
                                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                                 history.setTimeWhenItStopped(END_TIME);
                                 history.setDate(get_date());
-                                history.setJobName(job.getJobName().concat(" (UPLOAD)"));
+                                history.setJobName(job.getJobName().concat(" (U)"));
                                 history.setListOfMedia(new ArrayList<>());
                                 history.setStatus("CREATED");
                                 final List<String> objectList = job.getAllMediaPaths();
@@ -358,15 +432,15 @@ public class Home extends Email implements Initializable {
     }
 
     @FXML
-    void choose_directory(@NotNull ActionEvent event) {
+    void choose_directory(ActionEvent event) {
         try {
             if (event.getSource().equals(trailerBtn)) {
                 if (verify_trailers()) {
-                    display_trailers(get_app_details_as_object(new File(TRAILERS_JSON_FILE)));
+                    display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
                     new RubberBand(((Node) event.getSource())).play();
                 }
             } else if (event.getSource().equals(forMovies)) {
-                if (verify_movie()) {
+                if (the_selected_files_are_valid_movies()) {
                     add_movie_directory();
                     new RubberBand(((Node) event.getSource())).play();
                 }
@@ -414,22 +488,28 @@ public class Home extends Email implements Initializable {
     }
 
     @FXML
-    void place_directory_into_cart(@NotNull ActionEvent event) {
+    void place_directory_into_cart(ActionEvent event) {
         boolean isAMovie = true;
         try {
             if (event.getSource().equals(directoryForMovies)) {
-                if (moviesPathTF.getText().trim().isEmpty() || moviesPathTF.getText() == null) {
+                if (moviesPathTF.getText().trim().length() == 0 || moviesPathTF.getText() == null) {
                     empty_and_null_pointer_message(moviesPathTF).show();
+                    event.consume();
                     return;
                 }
                 add_movie_directory();
             } else {
+                if (seriesPathTF.getText().trim().length() == 0 || seriesPathTF.getText() == null) {
+                    empty_and_null_pointer_message(seriesPathTF).show();
+                    event.consume();
+                    return;
+                }
                 isAMovie = false;
                 add_series_directory();
             }
         } catch (NullPointerException e) {
             if (isAMovie) {
-                if (verify_movie()) {
+                if (the_selected_files_are_valid_movies()) {
                     add_movie_directory();
                     new RubberBand(((Node) event.getSource())).play();
                 }
@@ -459,16 +539,19 @@ public class Home extends Email implements Initializable {
 
     @FXML
     void send_mail_to_developer(ActionEvent event) {
-        if (senderEmailTF.getText().isEmpty() || senderEmailTF.getText().trim().isEmpty() || senderEmailTF.getText() == null) {
+        if (senderEmailTF.getText().isEmpty() || senderEmailTF.getText().trim().length() == 0 || senderEmailTF.getText() == null) {
             empty_and_null_pointer_message(senderEmailTF).show();
+            event.consume();
             return;
         }
         if (!email_is_in_correct_format(senderEmailTF.getText().trim())) {
             error_message("Bad email!", "Kindly ensure that the email you have provided is in the correct formant").show();
+            event.consume();
             return;
         }
-        if (emailMessageTA.getText().isEmpty() || emailMessageTA.getText().trim().isEmpty() || emailMessageTA.getText() == null) {
+        if (emailMessageTA.getText().isEmpty() || emailMessageTA.getText().trim().length() == 0 || emailMessageTA.getText() == null) {
             empty_and_null_pointer_message(emailMessageTA).show();
+            event.consume();
             return;
         }
         information_message("Please wait...");
@@ -570,10 +653,10 @@ public class Home extends Email implements Initializable {
             new Thread(objectTask).start();
 
             update_trailer_and_playlist_key();
-            Platform.runLater(() -> display_trailers(get_app_details_as_object(new File(TRAILERS_JSON_FILE))));
+            Platform.runLater(() -> display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)))));
 
             moviesPathTF.setOnAction(event -> {
-                verify_movie();
+                the_selected_files_are_valid_movies();
                 add_movie_directory();
             });
             seriesPathTF.setOnAction(event -> verify_series());
@@ -596,7 +679,7 @@ public class Home extends Email implements Initializable {
         }
     }
 
-    public @NotNull Task<Boolean> send_email(final String receiverEmail, final String text) {
+    public Task<Boolean> send_email(final String receiverEmail, final String text) {
         return new Task<Boolean>() {
             @Override
             protected Boolean call() {
@@ -614,13 +697,13 @@ public class Home extends Email implements Initializable {
         };
     }
 
-    private @NotNull Task<Object> automate_history() {
+    private Task<Object> automate_history() {
         return new Task<Object>() {
             @Override
             protected Object call() {
                 while (true) {
                     try {
-                        Platform.runLater(() -> display_all_history(create_history_list(get_app_details_as_object(new File(ACTIVITY_JSON_FILE)))));
+                        Platform.runLater(() -> display_all_history(create_history_list(get_app_details_as_object(new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE))))));
                         Thread.sleep(5000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -659,8 +742,8 @@ public class Home extends Email implements Initializable {
         return Pattern.matches("^[\\w!#$%&’*+/=?`{|}~^-]+(?:\\.[\\w!#$%&’*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$", param);
     }
 
-    private @NotNull Boolean verify_trailers() {
-        if (!trailersPathTF.getText().trim().isEmpty() || trailersPathTF.getText() != null) {
+    private boolean verify_trailers() {
+        if (trailersPathTF.getText().trim().length() > 0 || trailersPathTF.getText() != null) {
             trailersPathTF.setText(trailersPathTF.getText().trim().replace("\"", ""));
             File file = new File(trailersPathTF.getText());
             if (file.isFile()) {
@@ -672,23 +755,25 @@ public class Home extends Email implements Initializable {
         final DirectoryChooser directoryChooser = new DirectoryChooser();
         if (!recentDirectory.isEmpty()) {
             File file = new File(recentDirectory);
-            if(file.exists()) {
+            if (file.exists()) {
                 directoryChooser.setInitialDirectory(file);
             }
         }
         final File trailersFolder = directoryChooser.showDialog(Main.stage);
         if (trailersFolder != null) {
-            if (the_file_has_zero_bytes(trailersFolder)) {
-                error_message("Hmmh, empty folder!", "Movie hub has just found that the folder is empty").show();
-                return false;
+            if (the_file_or_folder_has_zero_bytes(trailersFolder)) {
+                if (get_sub_folders(trailersFolder).isEmpty()) {
+                    error_message("Hmmh, empty folder!", "Movie hub has just found that the folder is empty").show();
+                    return false;
+                }
             }
-            final JsonObject jsonObject = new SelectedMedia().get_details_about_number_of_seasons_and_episodes_of_a_series(trailersFolder);
-            if (Integer.parseInt(jsonObject.get("episodes").toString()) == 0) {
+            final com.google.gson.JsonObject jsonObject = get_details_about_number_of_seasons_and_episodes_of_a_series(trailersFolder);
+            if (new Gson().fromJson(jsonObject.get("episodes"), Integer.class) == 0) {
                 error_message("Hmmh, folder is empty!", "Movie hub could not find any valid video files in the folder").show();
                 return false;
             }
             JsonElement jsonElement = new Gson().toJsonTree(trailersFolder.getAbsolutePath(), String.class);
-            JsonArray jsonArray = get_app_details_as_object(new File(TRAILERS_JSON_FILE));
+            JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
             for (JsonElement jsonElement1 : jsonArray) {
                 if (jsonElement1.equals(jsonElement)) {
                     error_message("Hmmh, duplicate found!", "Movie hub already has the path you have just selected").show();
@@ -696,7 +781,7 @@ public class Home extends Email implements Initializable {
                 }
             }
             jsonArray.add(jsonElement);
-            if (!write_jsonArray_to_file(jsonArray, TRAILERS_JSON_FILE)) {
+            if (!write_jsonArray_to_file(jsonArray, format_path_name_to_current_os(TRAILERS_JSON_FILE))) {
                 error_message("Failed!", "The path was not deleted!");
             }
             final String path = trailersFolder.getAbsolutePath();
@@ -716,7 +801,7 @@ public class Home extends Email implements Initializable {
         }
     }
 
-    private @NotNull Map<LocalDate, JsonArray> create_history_list(@NotNull JsonArray jsonInfoArray) {
+    private Map<LocalDate, JsonArray> create_history_list(JsonArray jsonInfoArray) {
         final HashMap<LocalDate, JsonArray> unorderedMap = new HashMap<>();
         jsonInfoArray.forEach(jsonElement -> {
             final History history = new Gson().fromJson(jsonElement, History.class);
@@ -732,7 +817,7 @@ public class Home extends Email implements Initializable {
         return new TreeMap<>(unorderedMap).descendingMap();
     }
 
-    private void display_all_history(@NotNull Map<LocalDate, JsonArray> localDateJsonArrayMap) {
+    private void display_all_history(Map<LocalDate, JsonArray> localDateJsonArrayMap) {
         localDateJsonArrayMap.forEach((date, histories) -> {
             try {
                 ObservableList<Node> nodeObservableList = historyBox.getChildren();
@@ -789,8 +874,8 @@ public class Home extends Email implements Initializable {
         }
     }
 
-    @NotNull
-    private File get_name_of_the_new_destination_folder_after_its_duplicate_is_found(@NotNull File destinationFolder) {
+
+    private File get_name_of_the_new_destination_folder_after_its_duplicate_is_found(File destinationFolder) {
         if (destinationFolder.exists()) {
             destinationFolder = new File(destinationFolder.getAbsolutePath().concat("_").concat(String.format("%.0f", Math.random())));
             get_name_of_the_new_destination_folder_after_its_duplicate_is_found(destinationFolder);
@@ -799,7 +884,7 @@ public class Home extends Email implements Initializable {
         return destinationFolder;
     }
 
-    @NotNull
+
     private String get_formatted_size_of_selected_list_of_media() {
         final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
         if (!listOfSelectedMovies.isEmpty()) {
@@ -810,12 +895,12 @@ public class Home extends Email implements Initializable {
         }
         double bytes = 0;
         for (String mediaFilePath : allMediaPaths) {
-            bytes += new SelectedMedia().get_size_of_the_provided_file_or_folder(new File(mediaFilePath));
+            bytes += get_size_of_the_provided_file_or_folder(new File(mediaFilePath));
         }
-        return new SelectedMedia().make_bytes_more_presentable(bytes);
+        return make_bytes_more_presentable(bytes);
     }
 
-    private Double get_pricing() {
+    private double get_pricing() {
         double result = 25;
         try {
             final BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(Main.RESOURCE_PATH + "\\_config\\settings.json")));
@@ -829,8 +914,7 @@ public class Home extends Email implements Initializable {
         return result;
     }
 
-    @NotNull
-    private Double get_cost_of_selected_movies_or_series_or_both(final double costPerMedia) {
+    private double get_cost_of_selected_movies_or_series_or_both(final double costPerMedia) {
         double result = 0;
         final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
         if (!listOfSelectedMovies.isEmpty()) {
@@ -845,7 +929,7 @@ public class Home extends Email implements Initializable {
         return result;
     }
 
-    private Boolean show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(final String accountName, final double cost) {
+    private boolean show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(final String accountName, final double cost) {
         final Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.initOwner(Main.stage);
         alert.setTitle(accountName);
@@ -859,10 +943,10 @@ public class Home extends Email implements Initializable {
         return result.map(buttonType -> buttonType.equals(okayBtn)).orElse(false);
     }
 
-    private double get_size_of_the_selected_movies_and_series(@NotNull ObservableList<String> allMediaPaths) {
+    private double get_size_of_the_selected_movies_and_series(ObservableList<String> allMediaPaths) {
         double bytes = 0;
         for (String mediaFilePath : allMediaPaths) {
-            bytes += new SelectedMedia().get_size_of_the_provided_file_or_folder(new File(mediaFilePath));
+            bytes += get_size_of_the_provided_file_or_folder(new File(mediaFilePath));
         }
         return bytes;
     }
@@ -887,17 +971,17 @@ public class Home extends Email implements Initializable {
                 final String serial = String.format("%d", index);
                 if (movieList.containsKey(serial)) {
                     final String path = (String) movieList.get(serial);
-                    SelectedMedia.serial = serial;
-                    SelectedMedia.path = path;
-                    SelectedMedia.category = "movie";
+                    SelectedFile.serial = serial;
+                    SelectedFile.path = path;
+                    SelectedFile.category = "movie";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> moviesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedMovies.contains(SelectedMedia.path)) {
-                        listOfSelectedMovies.add(SelectedMedia.path);
+                    if (!listOfSelectedMovies.contains(SelectedFile.path)) {
+                        listOfSelectedMovies.add(SelectedFile.path);
                     }
-                    SelectedMedia.serial = "";
-                    SelectedMedia.path = "";
+                    SelectedFile.serial = "";
+                    SelectedFile.path = "";
                 }
             }
         } catch (IOException e) {
@@ -917,17 +1001,17 @@ public class Home extends Email implements Initializable {
                 final String serial = String.format("%d", index);
                 if (seriesList.containsKey(serial)) {
                     final String path = (String) seriesList.get(serial);
-                    SelectedMedia.serial = serial;
-                    SelectedMedia.path = path;
-                    SelectedMedia.category = "series";
+                    SelectedFile.serial = serial;
+                    SelectedFile.path = path;
+                    SelectedFile.category = "series";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> seriesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedSeries.contains(SelectedMedia.path)) {
-                        listOfSelectedSeries.add(SelectedMedia.path);
+                    if (!listOfSelectedSeries.contains(SelectedFile.path)) {
+                        listOfSelectedSeries.add(SelectedFile.path);
                     }
-                    SelectedMedia.serial = "";
-                    SelectedMedia.path = "";
+                    SelectedFile.serial = "";
+                    SelectedFile.path = "";
                 }
             }
         } catch (IOException e) {
@@ -937,13 +1021,10 @@ public class Home extends Email implements Initializable {
         }
     }
 
-    private boolean the_file_has_zero_bytes(@NotNull File file) {
-        return new SelectedMedia().get_size_of_the_provided_file_or_folder(file) == 0;
-    }
-
-    @NotNull
-    private Boolean verify_series() {
-        if (!seriesPathTF.getText().trim().isEmpty() || seriesPathTF.getText() != null) {
+    private boolean verify_series() {
+        if (seriesPathTF.getText().trim().length() == 0 || seriesPathTF.getText() == null) {
+            return false;
+        } else {
             seriesPathTF.setText(seriesPathTF.getText().trim().replace("\"", ""));
             File file = new File(seriesPathTF.getText());
             if (file.isFile()) {
@@ -958,12 +1039,25 @@ public class Home extends Email implements Initializable {
         }
         final File seriesFolder = directoryChooser.showDialog(Main.stage);
         if (seriesFolder != null) {
-            if (the_file_has_zero_bytes(seriesFolder)) {
-                error_message("Hmmh, empty folder!", "Movie hub has just found that the folder is empty").show();
-                return false;
+            List<File> folderList = new ArrayList<>();
+            folderList.add(seriesFolder);
+            return verify_selected_series_folders_files(folderList);
+        } else {
+            error_message("Invalid directory!", "Sadly no folder has been selected.").show();
+            return false;
+        }
+    }
+
+    private boolean verify_selected_series_folders_files(List<File> seriesFolders) {
+        for (File seriesFolder : seriesFolders) {
+            if (the_file_or_folder_has_zero_bytes(seriesFolder)) {
+                if (get_sub_folders(seriesFolder).isEmpty()) {
+                    error_message("Hmmh, empty folder!", "Movie hub has just found that the folder is empty").show();
+                    return false;
+                }
             }
-            final JsonObject jsonObject = new SelectedMedia().get_details_about_number_of_seasons_and_episodes_of_a_series(seriesFolder);
-            if (Integer.parseInt(jsonObject.get("episodes").toString()) == 0) {
+            final com.google.gson.JsonObject jsonObject = get_details_about_number_of_seasons_and_episodes_of_a_series(seriesFolder);
+            if (new Gson().fromJson(jsonObject.get("episodes"), Integer.class) == 0) {
                 error_message("Hmmh, episode count error!", "Movie hub could not find any valid video files in the folder").show();
                 return false;
             }
@@ -975,16 +1069,12 @@ public class Home extends Email implements Initializable {
             seriesPathTF.setText(path);
             seriesList.put(String.format("%d", ++seriesCount), path);
             recentDirectory = path;
-            return true;
-        } else {
-            error_message("Invalid directory!", "Sadly no folder has been selected.").show();
-            return false;
         }
+        return true;
     }
 
-    @NotNull
-    private Boolean verify_movie() {
-        if (!moviesPathTF.getText().trim().isEmpty() || moviesPathTF.getText() != null) {
+    private boolean the_selected_files_are_valid_movies() {
+        if (moviesPathTF.getText().trim().length() > 0 || moviesPathTF.getText() != null) {
             moviesPathTF.setText(moviesPathTF.getText().trim().replace("\"", ""));
             final File file = new File(moviesPathTF.getText());
             if (file.isFile()) {
@@ -999,11 +1089,15 @@ public class Home extends Email implements Initializable {
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Movie File", extensions));
         if (!recentDirectory.isEmpty()) {
             File file = new File(recentDirectory);
-            if(file.exists()) {
+            if (file.exists()) {
                 fileChooser.setInitialDirectory(file);
             }
         }
         final List<File> movieFiles = fileChooser.showOpenMultipleDialog(Main.stage);
+        return verify_selected_movie_files(movieFiles);
+    }
+
+    private boolean verify_selected_movie_files(List<File> movieFiles) {
         if (movieFiles == null) {
             error_message("Invalid directory!", "Sadly no directory was selected to save the selected media").show();
             return false;
@@ -1013,7 +1107,7 @@ public class Home extends Email implements Initializable {
                 error_message("Hmmh, duplicate found!", "A movie you have selected has already been selected and it will be ignored, meanwhile stay tuned for more info").show();
                 error_message("DETAILS", movieFile.getName().concat(" is the duplicate.")).show();
             } else {
-                if (the_file_has_zero_bytes(movieFile)) {
+                if (the_file_or_folder_has_zero_bytes(movieFile)) {
                     error_message("Hmmh, a bad file found!", "A movie has zero bytes and it will be ignored, meanwhile stay tuned for more info").show();
                     error_message("DETAILS", movieFile.getName().concat(" has zero bytes.")).show();
                 } else {
@@ -1043,17 +1137,17 @@ public class Home extends Email implements Initializable {
                 final String serial = String.format("%d", index);
                 if (seriesList.containsKey(serial)) {
                     final String path = (String) seriesList.get(serial);
-                    SelectedMedia.serial = serial;
-                    SelectedMedia.path = path;
-                    SelectedMedia.category = "series";
+                    SelectedFile.serial = serial;
+                    SelectedFile.path = path;
+                    SelectedFile.category = "series";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> seriesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedSeries.contains(SelectedMedia.path)) {
-                        listOfSelectedSeries.add(SelectedMedia.path);
+                    if (!listOfSelectedSeries.contains(SelectedFile.path)) {
+                        listOfSelectedSeries.add(SelectedFile.path);
                     }
-                    SelectedMedia.serial = "";
-                    SelectedMedia.path = "";
+                    SelectedFile.serial = "";
+                    SelectedFile.path = "";
                 }
             }
             seriesPathTF.setText("");
@@ -1074,17 +1168,17 @@ public class Home extends Email implements Initializable {
                 final String serial = String.format("%d", index);
                 if (movieList.containsKey(serial)) {
                     final String path = (String) movieList.get(serial);
-                    SelectedMedia.serial = serial;
-                    SelectedMedia.path = path;
-                    SelectedMedia.category = "movie";
+                    SelectedFile.serial = serial;
+                    SelectedFile.path = path;
+                    SelectedFile.category = "movie";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> moviesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedMovies.contains(SelectedMedia.path)) {
-                        listOfSelectedMovies.add(SelectedMedia.path);
+                    if (!listOfSelectedMovies.contains(SelectedFile.path)) {
+                        listOfSelectedMovies.add(SelectedFile.path);
                     }
-                    SelectedMedia.serial = "";
-                    SelectedMedia.path = "";
+                    SelectedFile.serial = "";
+                    SelectedFile.path = "";
                 }
             }
             moviesPathTF.setText("");
@@ -1094,4 +1188,5 @@ public class Home extends Email implements Initializable {
             new Thread(write_stack_trace(e)).start();
         }
     }
+
 }

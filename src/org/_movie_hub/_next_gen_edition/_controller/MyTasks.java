@@ -11,10 +11,10 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import org._movie_hub._next_gen_edition._api.Server;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
 import org._movie_hub._next_gen_edition._object.History;
 import org._movie_hub._next_gen_edition._object.Job;
-import org._movie_hub._next_gen_edition._server.Services;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author Mandela aka puumInc
  */
-@SuppressWarnings("unused")
 public class MyTasks extends Watchdog implements Initializable {
 
     protected static String taskName;
@@ -73,6 +72,7 @@ public class MyTasks extends Watchdog implements Initializable {
             programmer_error(e).show();
             new Thread(write_stack_trace(e)).start();
         }
+        event.consume();
     }
 
     @FXML
@@ -128,14 +128,15 @@ public class MyTasks extends Watchdog implements Initializable {
         taskStatusBar.setProgress(0);
         taskStatusBar.progressProperty().unbind();
         if (!this.myJob.isForUpload()) {
-            final Task<String> task = copy_selected_media_list(this.myJob.getDestinationFolder(), this.myJob.getJobName(), this.myJob.getAllMediaPaths());
+            final Task<String> task = copy_selected_media_list(this.myJob.getDestinationFolder(),
+                    this.myJob.getJobName(), this.myJob.getAllMediaPaths());
             task.setOnSucceeded(event1 -> {
                 if (task.getValue() != null) {
                     final History history = new History();
                     history.setTimeWhenItStarted(TIME_IT_STARTED);
                     history.setTimeWhenItStopped(task.getValue());
                     history.setDate(get_date());
-                    history.setJobName(this.myJob.getJobName().concat("(COPY_2_DRIVE)"));
+                    history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
                     history.setListOfMedia(new ArrayList<>());
                     history.setStatus("COMPLETE");
                     String path = "==================================================\n"
@@ -154,7 +155,8 @@ public class MyTasks extends Watchdog implements Initializable {
                     }
                     path = path.concat("\n\n");
                     new Thread(write_log(path, history)).start();
-                    create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJob.getJobName(), path, this.myJob.getDestinationFolder());
+                    create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJob.getJobName(),
+                            path, this.myJob.getDestinationFolder());
                     success_notification("List " + this.myJob.getJobName() + " has been copied completely.").show();
                     copiedItems.remove(myJob.getJobName());
                     Home.listOfCopyThreads.remove(myJob.getJobName());
@@ -175,7 +177,7 @@ public class MyTasks extends Watchdog implements Initializable {
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(COPY_2_DRIVE)"));
+                history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("INCOMPLETE");
                 String path = "==================================================\n"
@@ -230,7 +232,7 @@ public class MyTasks extends Watchdog implements Initializable {
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(UPLOAD)"));
+                history.setJobName(this.myJob.getJobName().concat("(U)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("COMPLETE");
                 final List<String> objectList = this.myJob.getAllMediaPaths();
@@ -254,7 +256,7 @@ public class MyTasks extends Watchdog implements Initializable {
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(COPY_2_DRIVE)"));
+                history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("INCOMPLETE");
                 String path = "==================================================\n"
@@ -302,17 +304,16 @@ public class MyTasks extends Watchdog implements Initializable {
     }
 
     protected Task<Object> copy_progress(double jobSizeAsBytes) {
-        final SelectedMedia selectedMedia = new SelectedMedia();
         final double TOTAL_SIZE_IN_MB = ((jobSizeAsBytes / 1024) / 1024);
         return new Task<Object>() {
             @Override
             protected Object call() throws InterruptedException {
                 while (true) {
                     updateProgress(0, 1);
-                    if (Services.taskRequested != null) {
-                        if (Home.listOfUploadThreads.containsKey(Services.taskRequested)) {
-                            if (Home.listOfUploadThreads.get(Services.taskRequested).getJobName().equals(taskName)) {
-                                Services.taskRequested = null;
+                    if (Server.taskRequested != null) {
+                        if (Home.listOfUploadThreads.containsKey(Server.taskRequested)) {
+                            if (Home.listOfUploadThreads.get(Server.taskRequested).getJobName().equals(taskName)) {
+                                Server.taskRequested = null;
                                 break;
                             }
                         }
@@ -336,7 +337,7 @@ public class MyTasks extends Watchdog implements Initializable {
                         updateProgress(megabytes, TOTAL_SIZE_IN_MB);
                         final double currentMb = megabytes;
                         final double currentBytes = bytes;
-                        Platform.runLater(() -> sizeDifferenceLbl.setText("Uploaded ".concat(selectedMedia.make_bytes_more_presentable(currentBytes)).concat(" of ").concat(selectedMedia.make_bytes_more_presentable(jobSizeAsBytes))));
+                        Platform.runLater(() -> sizeDifferenceLbl.setText("Uploaded ".concat(make_bytes_more_presentable(currentBytes)).concat(" of ").concat(make_bytes_more_presentable(jobSizeAsBytes))));
                     }
                 }
                 return null;
@@ -402,20 +403,18 @@ public class MyTasks extends Watchdog implements Initializable {
                             }
                         }
                     } catch (NullPointerException e) {
-                        Platform.runLater(() -> error_message_alert("Something is missing or null", e.getLocalizedMessage()).show());
+                        Platform.runLater(() -> error_message_alert("Something is missing (null).", e.getLocalizedMessage()).show());
                         return null;
                     } catch (IOException e) {
-                        if (e.getLocalizedMessage() != null) {
-                            if (e.getLocalizedMessage().contains("are the same")) {
-                                Platform.runLater(() -> error_message("File already exists", "Please select another file from else where other than the 'safe zone' files.").show());
-                            } else if (e.getLocalizedMessage().contains("not enough space on disk")) {
-                                error_message("Not enough Space!", e.getLocalizedMessage()).show();
-                            } else {
-                                new Thread(write_stack_trace(e)).start();
-                                Platform.runLater(() -> programmer_error(e).show());
-                            }
-                        }
                         e.printStackTrace();
+                        if (e.getLocalizedMessage().contains("are the same")) {
+                            Platform.runLater(() -> error_message("File already exists", "Please select another file from else where other than the 'safe zone' files.").show());
+                        } else if (e.getLocalizedMessage().contains("not enough space on disk")) {
+                            error_message("Not enough Space!", e.getLocalizedMessage()).show();
+                        } else {
+                            new Thread(write_stack_trace(e)).start();
+                            Platform.runLater(() -> programmer_error(e).show());
+                        }
                         return null;
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -432,22 +431,9 @@ public class MyTasks extends Watchdog implements Initializable {
         };
     }
 
-    protected Boolean can_be_used_by_vlc(File file) {
-        final String[] extensions = new Home().EXTENSIONS_SUPPORTED_BY_VLC.split(":");
-        boolean result = false;
-        for (String string : extensions) {
-            if (file.getName().endsWith(string) || file.getName().endsWith(string.toUpperCase())) {
-                result = true;
-                break;
-            }
-        }
-        return result;
-    }
-
     @NotNull
     protected Task<Object> copy_progress(double jobSizeAsBytes, final File destinationFolder) {
         final double originalBytesBeforeCopy = get_folder_size(destinationFolder);
-        final SelectedMedia selectedMedia = new SelectedMedia();
         final double TOTAL_SIZE_IN_MB = ((jobSizeAsBytes / 1024) / 1024);
         return new Task<Object>() {
             @Override
@@ -461,9 +447,8 @@ public class MyTasks extends Watchdog implements Initializable {
                         double kilobytes = (bytes / 1024);
                         megabytes = (kilobytes / 1024);
                         updateProgress(megabytes, TOTAL_SIZE_IN_MB);
-                        final double currentMb = megabytes;
                         final double currentBytes = bytes;
-                        Platform.runLater(() -> sizeDifferenceLbl.setText("Copied ".concat(selectedMedia.make_bytes_more_presentable(currentBytes)).concat(" of ").concat(selectedMedia.make_bytes_more_presentable(jobSizeAsBytes))));
+                        Platform.runLater(() -> sizeDifferenceLbl.setText("Copied ".concat(make_bytes_more_presentable(currentBytes)).concat(" of ").concat(make_bytes_more_presentable(jobSizeAsBytes))));
                     }
                 }
                 return null;

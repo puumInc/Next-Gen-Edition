@@ -15,7 +15,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.util.Duration;
 import org._movie_hub._next_gen_edition.Main;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
-import org._movie_hub._next_gen_edition._server.Services;
+import org._movie_hub._next_gen_edition._api.Server;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -107,7 +107,7 @@ public class SplashScreen extends Watchdog implements Initializable {
         return () -> {
             try {
                 ProcessBuilder processBuilder = new ProcessBuilder();
-                processBuilder.command(Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Ip_address\\").concat("Ip_address.exe"));
+                processBuilder.command(Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Address\\").concat("Address.exe"));
                 processBuilder.redirectErrorStream(true);
                 Main.process = processBuilder.start();
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(Main.process.getInputStream()));
@@ -130,7 +130,11 @@ public class SplashScreen extends Watchdog implements Initializable {
     @NotNull
     @Contract(value = " -> new", pure = true)
     private Task<Object> loading_progress() {
-        final String[] appInfo = new String[]{"Please wait as i freshen up :)", "Version 1. 0. 0", "I was designed and developed by < puum . inc ( ) / >", "The server has been switched on", "Almost done..."};
+        final String[] appInfo = new String[]{"Please wait as i freshen up :)",
+                "Version 1. 0. 0",
+                "I was designed and developed by < puum . inc ( ) / >",
+                "The server has been switched on",
+                "Almost done..."};
         return new Task<Object>() {
             @Override
             protected Object call() {
@@ -149,7 +153,7 @@ public class SplashScreen extends Watchdog implements Initializable {
                                 Platform.runLater(() -> threadUpdate.setText(appInfo[2]));
                                 break;
                             case 60:
-                                new Services();
+                                new Server();
                                 Platform.runLater(() -> {
                                     new Thread(start_my_ip_server_app()).start();
                                     threadUpdate.setText(appInfo[3]);

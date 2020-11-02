@@ -36,6 +36,7 @@ public class MyActivity extends Watchdog implements Initializable {
     @FXML
     void show_list_of_media(ActionEvent event) {
         show_list_of_copied_media("Name: ".concat(this.myHistory.getJobName()), generate_a_string_from_list_of_media_paths(this.myHistory.getListOfMedia())).show();
+        event.consume();
     }
 
     @Override

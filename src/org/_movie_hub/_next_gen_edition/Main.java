@@ -30,19 +30,23 @@ public class Main extends Application {
             primaryStage.setX(event1.getScreenX() - xOffset);
             primaryStage.setY(event1.getScreenY() - yOffset);
         });
-        primaryStage.getIcons().add(new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/movieHubIcon.png").toExternalForm()));
+        primaryStage.getIcons().addAll(
+                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x1.png").toExternalForm()),
+                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x2.png").toExternalForm()),
+                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x3.png").toExternalForm()),
+                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x4.png").toExternalForm()));
         primaryStage.setScene(scene);
         primaryStage.centerOnScreen();
         primaryStage.initStyle(StageStyle.DECORATED);
         primaryStage.setResizable(false);
         primaryStage.show();
         primaryStage.setOnCloseRequest(event -> {
-            if (process != null) {
-                process.destroy();
+            if (Main.process != null) {
+                Main.process.destroy();
             }
             System.exit(0);
         });
-        stage = primaryStage;
+        Main.stage = primaryStage;
     }
 
     public static void main(String[] args) {
