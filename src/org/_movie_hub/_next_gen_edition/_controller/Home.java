@@ -1,7 +1,6 @@
 package org._movie_hub._next_gen_edition._controller;
 
 import animatefx.animation.*;
-import com.github.cliftonlabs.json_simple.JsonObject;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -36,7 +35,7 @@ import javafx.stage.FileChooser;
 import org._movie_hub._next_gen_edition.Main;
 import org._movie_hub._next_gen_edition._custom.Email;
 import org._movie_hub._next_gen_edition._object.History;
-import org._movie_hub._next_gen_edition._object.Job;
+import org._movie_hub._next_gen_edition._object.JobPackage;
 import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedReader;
@@ -56,19 +55,11 @@ import java.util.regex.Pattern;
 
 public class Home extends Email implements Initializable {
 
-    public final static HashMap<String, Job> listOfCopyThreads = new HashMap<>();
-    public final static String EXTENSIONS_FOR_MOVIES_ONLY = ".m4v:.mpeg1:.mpeg2:.flv:.mkv:.mov:.mpeg4:.vob:.avi:.mpeg:.m4a:.3gp:.mp4:.m4p";
-    public final static HashMap<String, Job> listOfUploadThreads = new HashMap<>();
-    protected final static ObservableList<String> listOfStartedThreads = FXCollections.observableArrayList();
-    protected final static JsonObject movieList = new JsonObject();
-    protected final static JsonObject seriesList = new JsonObject();
-    protected final static List<String> listOfSelectedMovies = new ArrayList<>();
-    protected final static List<String> listOfSelectedSeries = new ArrayList<>();
-    public static HashMap<String, HashMap<String, String>> listOfTrailerIds;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
     private String recentDirectory = "";
     private int moviesCount = 0;
     private int seriesCount = 0;
+
     @FXML
     private StackPane aboutPage;
 
@@ -227,11 +218,11 @@ public class Home extends Email implements Initializable {
             new FadeOut(questionPane).play();
             tasksPane.toFront();
             new FadeIn(tasksPane).play();
-            if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty() && !Home.listOfCopyThreads.isEmpty()) {
+            if (LIST_OF_SELECTED_MOVIES.isEmpty() && LIST_OF_SELECTED_SERIES.isEmpty() && !LIST_OF_COPY_THREADS.isEmpty()) {
                 event.consume();
                 return;
-            } else if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty()) {
-                if (taskBox.getChildren().size() < 1) {
+            } else if (LIST_OF_SELECTED_MOVIES.isEmpty() && LIST_OF_SELECTED_SERIES.isEmpty()) {
+                if (taskBox.getChildren().size() == 0) {
                     if (emptyListLbl.getOpacity() < 1) {
                         new FadeOut(jobPane).play();
                         emptyListLbl.toFront();
@@ -252,51 +243,62 @@ public class Home extends Email implements Initializable {
             File destinationFolder = directoryChooser.showDialog(Main.stage);
             if (destinationFolder != null) {
                 final String sizeOfWhatWeWantToCopy = get_formatted_size_of_selected_list_of_media();
-                String jobName = create_new_name_for_copy_jobs(sizeOfWhatWeWantToCopy);
-                if (jobName != null) {
+                String packageName = create_name_for_new_packages(sizeOfWhatWeWantToCopy);
+                if (packageName != null) {
                     final double cost = get_cost_of_selected_movies_or_series_or_both(get_pricing());
-                    if (show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(jobName, cost)) {
-                        if (Home.listOfCopyThreads.containsKey(jobName)) {
+                    if (show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(packageName, cost)) {
+                        if (LIST_OF_COPY_THREADS.containsKey(packageName)) {
                             error_message("Given task name exists!", "Please type a unique name for the task").show();
                         } else {
-                            destinationFolder = new File(destinationFolder.getAbsolutePath().concat("\\").concat(jobName));
+                            destinationFolder = new File(destinationFolder.getAbsolutePath().concat("\\").concat(packageName));
                             destinationFolder = get_name_of_the_new_destination_folder_after_its_duplicate_is_found(destinationFolder);
-                            jobName = destinationFolder.getName();
+                            packageName = destinationFolder.getName();
+
                             FileUtils.forceMkdir(destinationFolder);
-                            final File chosenDestination = destinationFolder;
+
                             final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
-                            allMediaPaths.addAll(listOfSelectedMovies);
-                            allMediaPaths.addAll(listOfSelectedSeries);
-                            final Job job = new Job();
-                            job.setForUpload(false);
-                            job.setDestinationFolder(chosenDestination);
-                            job.setJobName(jobName);
-                            job.setCost(cost);
-                            job.setAllMediaPaths(allMediaPaths);
-                            job.setSourceSize(get_size_of_the_selected_movies_and_series(allMediaPaths));
-                            listOfSelectedMovies.clear();
-                            listOfSelectedSeries.clear();
-                            movieList.clear();
-                            seriesList.clear();
-                            if (!listOfStartedThreads.contains(jobName)) {
-                                Home.listOfCopyThreads.put(jobName, job);
+                            for (String pathToSeriesFolder : LIST_OF_SELECTED_SERIES) {
+                                File file = new File(pathToSeriesFolder);
+                                JsonArray directoryOfSubFilesInTheProvidedFolder = get_directory_of_sub_files_in_the_provided_folder(file);
+                                for (JsonElement jsonElement : directoryOfSubFilesInTheProvidedFolder) {
+                                    String path = new Gson().fromJson(jsonElement, String.class);
+                                    allMediaPaths.add(path);
+                                }
+                            }
+
+                            final JobPackage jobPackage = new JobPackage();
+                            jobPackage.setForUpload(false);
+                            jobPackage.setDestinationFolder(destinationFolder);
+                            jobPackage.setName(packageName);
+                            jobPackage.setCost(cost);
+                            jobPackage.setAllMediaPaths(allMediaPaths);
+                            jobPackage.setSourceSize(get_size_of_the_selected_movies_and_series(allMediaPaths));
+                            LIST_OF_SELECTED_MOVIES.clear();
+                            LIST_OF_SELECTED_SERIES.clear();
+                            MOVIE_LIST.clear();
+                            SERIES_LIST.clear();
+                            if (!listOfStartedThreads.contains(packageName)) {
+                                LIST_OF_COPY_THREADS.put(packageName, jobPackage);
                                 try {
                                     final String END_TIME = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
                                     final History history = new History();
                                     history.setTimeWhenItStarted(TIME_IT_STARTED);
                                     history.setTimeWhenItStopped(END_TIME);
                                     history.setDate(get_date());
-                                    history.setJobName(job.getJobName().concat(" (Cp2D)"));
+                                    history.setJobName(jobPackage.getName().concat(" (Cp2D)"));
                                     history.setListOfMedia(new ArrayList<>());
                                     history.setStatus("CREATED");
-                                    final List<String> objectList = job.getAllMediaPaths();
+                                    final List<String> objectList = jobPackage.getAllMediaPaths();
                                     for (String pathToMedia : objectList) {
                                         history.getListOfMedia().add(new File(pathToMedia).getName());
                                     }
                                     new Thread(write_log("New Copy to drive", history)).start();
-                                    MyTasks.taskName = jobName;
+                                    MyTasks.taskName = packageName;
                                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/taskUI.fxml"));
-                                    Platform.runLater(() -> taskBox.getChildren().add(node));
+                                    Platform.runLater(() -> {
+                                        taskBox.getChildren().add(node);
+                                        MyTasks.taskName = null;
+                                    });
                                     Platform.runLater(() -> {
                                         update_movies_list();
                                         update_series_list();
@@ -309,10 +311,10 @@ public class Home extends Email implements Initializable {
                             }
                         }
                     } else {
-                        error_message_alert("Billing declined!", "The job will NOT be started because the customer has not approved the job to start").show();
+                        error_message_alert("Billing declined!", "The package will NOT be started because is payment has not been received").show();
                     }
                 } else {
-                    error_message_alert("No task name was provided!", "Please ensure you enter the name of the task to continue").show();
+                    error_message_alert("No package name was provided!", "Please ensure you enter the name for it to continue").show();
                 }
             }
         } catch (Exception e) {
@@ -320,23 +322,24 @@ public class Home extends Email implements Initializable {
             programmer_error(e).show();
             new Thread(write_stack_trace(e)).start();
         }
+        event.consume();
     }
 
     @FXML
     void allow_to_upload_to_a_mobile_phone(ActionEvent event) {
         final String TIME_IT_STARTED = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
-        if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty()) {
+        if (LIST_OF_SELECTED_MOVIES.isEmpty() && LIST_OF_SELECTED_SERIES.isEmpty()) {
             warning_message("Incomplete!", "Please select at least one movie file or series folder ot continue").show();
         }
         try {
             new FadeOut(questionPane).play();
             tasksPane.toFront();
             new FadeIn(tasksPane).play();
-            if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty() && !Home.listOfUploadThreads.isEmpty()) {
+            if (LIST_OF_SELECTED_MOVIES.isEmpty() && LIST_OF_SELECTED_SERIES.isEmpty() && !STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.isEmpty()) {
                 event.consume();
                 return;
-            } else if (listOfSelectedMovies.isEmpty() && listOfSelectedSeries.isEmpty()) {
-                if (taskBox.getChildren().size() < 1) {
+            } else if (LIST_OF_SELECTED_MOVIES.isEmpty() && LIST_OF_SELECTED_SERIES.isEmpty()) {
+                if (taskBox.getChildren().size() == 0) {
                     if (emptyListLbl.getOpacity() < 1) {
                         new FadeOut(jobPane).play();
                         emptyListLbl.toFront();
@@ -354,43 +357,43 @@ public class Home extends Email implements Initializable {
                 }
             }
             final String sizeOfWhatWeWantToCopy = get_formatted_size_of_selected_list_of_media();
-            final String jobName = create_new_name_for_copy_jobs(sizeOfWhatWeWantToCopy);
-            if (jobName != null) {
+            final String packageName = create_name_for_new_packages(sizeOfWhatWeWantToCopy);
+            if (packageName != null) {
                 final double cost = get_cost_of_selected_movies_or_series_or_both(get_pricing());
-                if (show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(jobName, cost)) {
-                    if (Home.listOfUploadThreads.containsKey(jobName)) {
-                        error_message("Given task name exists!", "Please type a unique name for the task").show();
+                if (show_information_of_the_amount_the_customer_should_pay_and_set_account_number_it_should_be_paid_to(packageName, cost)) {
+                    if (STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.containsKey(packageName)) {
+                        error_message("Given package name exists!", "Please type a unique name").show();
                     } else {
                         final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
-                        allMediaPaths.addAll(listOfSelectedMovies);
-                        allMediaPaths.addAll(listOfSelectedSeries);
-                        final Job job = new Job();
-                        job.setForUpload(true);
-                        job.setJobName(jobName);
-                        job.setCost(cost);
-                        job.setAllMediaPaths(allMediaPaths);
-                        job.setSourceSize(get_size_of_the_selected_movies_and_series(allMediaPaths));
-                        listOfSelectedMovies.clear();
-                        listOfSelectedSeries.clear();
-                        movieList.clear();
-                        seriesList.clear();
-                        if (!listOfStartedThreads.contains(jobName)) {
-                            Home.listOfUploadThreads.put(jobName, job);
+                        allMediaPaths.addAll(LIST_OF_SELECTED_MOVIES);
+                        allMediaPaths.addAll(LIST_OF_SELECTED_SERIES);
+                        final JobPackage jobPackage = new JobPackage();
+                        jobPackage.setForUpload(true);
+                        jobPackage.setName(packageName);
+                        jobPackage.setCost(cost);
+                        jobPackage.setAllMediaPaths(allMediaPaths);
+                        jobPackage.setSourceSize(get_size_of_the_selected_movies_and_series(allMediaPaths));
+                        LIST_OF_SELECTED_MOVIES.clear();
+                        LIST_OF_SELECTED_SERIES.clear();
+                        MOVIE_LIST.clear();
+                        SERIES_LIST.clear();
+                        if (!listOfStartedThreads.contains(packageName)) {
+                            STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.put(packageName, jobPackage);
                             try {
                                 final String END_TIME = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
                                 final History history = new History();
                                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                                 history.setTimeWhenItStopped(END_TIME);
                                 history.setDate(get_date());
-                                history.setJobName(job.getJobName().concat(" (U)"));
+                                history.setJobName(jobPackage.getName().concat(" (U)"));
                                 history.setListOfMedia(new ArrayList<>());
                                 history.setStatus("CREATED");
-                                final List<String> objectList = job.getAllMediaPaths();
+                                final List<String> objectList = jobPackage.getAllMediaPaths();
                                 for (String pathToMedia : objectList) {
                                     history.getListOfMedia().add(new File(pathToMedia).getName());
                                 }
                                 new Thread(write_log("New Upload", history)).start();
-                                MyTasks.taskName = jobName;
+                                MyTasks.taskName = packageName;
                                 final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/taskUI.fxml"));
                                 Platform.runLater(() -> taskBox.getChildren().add(node));
                                 Platform.runLater(() -> {
@@ -405,16 +408,17 @@ public class Home extends Email implements Initializable {
                         }
                     }
                 } else {
-                    error_message_alert("Billing declined!", "The job will NOT be started because the customer has not approved the job to start").show();
+                    error_message_alert("Billing declined!", "The package will NOT be started because it's not been paid for").show();
                 }
             } else {
-                error_message_alert("No task name was provided!", "Please ensure you enter the name of the task to continue").show();
+                error_message_alert("No package name was provided!", "Please ensure you enter the name of the package").show();
             }
         } catch (Exception e) {
             e.printStackTrace();
             programmer_error(e).show();
             new Thread(write_stack_trace(e)).start();
         }
+        event.consume();
     }
 
     @FXML
@@ -429,6 +433,7 @@ public class Home extends Email implements Initializable {
             bridgePane.toFront();
             new FadeInLeft(bridgePane).play();
         }
+        event.consume();
     }
 
     @FXML
@@ -455,6 +460,7 @@ public class Home extends Email implements Initializable {
             programmer_error(e).show();
             new Thread(write_stack_trace(e)).start();
         }
+        event.consume();
     }
 
     @FXML
@@ -464,6 +470,7 @@ public class Home extends Email implements Initializable {
             homePane.toFront();
             new FadeInRight(homePane).play();
         }
+        event.consume();
     }
 
     @FXML
@@ -471,6 +478,7 @@ public class Home extends Email implements Initializable {
         new FadeOut(tasksPane).play();
         questionPane.toFront();
         new FadeIn(questionPane).play();
+        event.consume();
     }
 
     @FXML
@@ -478,6 +486,7 @@ public class Home extends Email implements Initializable {
         new FadeOutRight(seriesPane).play();
         moviesPane.toFront();
         new FadeInLeft(moviesPane).play();
+        event.consume();
     }
 
     @FXML
@@ -485,6 +494,7 @@ public class Home extends Email implements Initializable {
         new FadeOutLeft(moviesPane).play();
         seriesPane.toFront();
         new FadeInRight(seriesPane).play();
+        event.consume();
     }
 
     @FXML
@@ -524,10 +534,11 @@ public class Home extends Email implements Initializable {
             programmer_error(e).show();
             new Thread(write_stack_trace(e)).start();
         }
+        event.consume();
     }
 
     @FXML
-    void show_about_page(ActionEvent actionEvent) {
+    void show_about_page(ActionEvent event) {
         show_menu();
         if (aboutPage.getOpacity() < 1) {
             hide_the_current_pane();
@@ -535,6 +546,7 @@ public class Home extends Email implements Initializable {
             new FadeInRight(aboutPage).play();
         }
         hide_menu();
+        event.consume();
     }
 
     @FXML
@@ -568,15 +580,8 @@ public class Home extends Email implements Initializable {
             }
         });
         task.setOnFailed(event1 -> Platform.runLater(() -> error_message("Failed!", "Your message was NOT sent").show()));
-        task.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
-            if (newValue != null) {
-                Exception e = (Exception) newValue;
-                e.printStackTrace();
-                programmer_error(e).show();
-                new Thread(write_stack_trace(e)).start();
-            }
-        }));
         new Thread(task).start();
+        event.consume();
     }
 
     @FXML
@@ -587,6 +592,7 @@ public class Home extends Email implements Initializable {
             new FadeInRight(emailPage).play();
         }
         hide_menu();
+        event.consume();
     }
 
     @FXML
@@ -598,6 +604,7 @@ public class Home extends Email implements Initializable {
             new FadeInRight(historyPage).play();
         }
         hide_menu();
+        event.consume();
     }
 
     @FXML
@@ -608,11 +615,13 @@ public class Home extends Email implements Initializable {
             new FadeInRight(homePane).play();
         }
         hide_menu();
+        event.consume();
     }
 
     @FXML
     void show_menu_options(ActionEvent event) {
         show_menu();
+        event.consume();
     }
 
     @FXML
@@ -624,36 +633,32 @@ public class Home extends Email implements Initializable {
             new FadeInRight(trailerPage).play();
         }
         hide_menu();
+        event.consume();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         try {
-            final ObservableList<Node> observableList = optionsBox.getChildren();
-            for (Node node : observableList) {
-                if (node instanceof JFXButton) {
-                    final JFXButton jfxButton = (JFXButton) node;
-                    final Pulse pulse = new Pulse(jfxButton);
-                    jfxButton.setOnMouseEntered(event -> pulse.play());
-                    jfxButton.setOnMouseExited(event -> pulse.stop());
-                }
-            }
+            optionsBox.getChildren().stream().filter(node -> node instanceof JFXButton).map(node -> (JFXButton) node).forEach(jfxButton -> {
+                final Pulse pulse = new Pulse(jfxButton);
+                jfxButton.setOnMouseEntered(event -> pulse.play());
+                jfxButton.setOnMouseExited(event -> pulse.stop());
+            });
 
             hide_menu();
 
-            final Task<Object> objectTask = automate_history();
-            objectTask.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    Exception e = (Exception) newValue;
-                    e.printStackTrace();
-                    programmer_error(e).show();
-                    new Thread(write_stack_trace(e)).start();
-                }
-            }));
-            new Thread(objectTask).start();
+            new Thread(automate_history()).start();
 
             update_trailer_and_playlist_key();
-            Platform.runLater(() -> display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)))));
+            Platform.runLater(() -> {
+                try {
+                    display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    new Thread(write_stack_trace(ex)).start();
+                    Platform.runLater(() -> programmer_error(ex).show());
+                }
+            });
 
             moviesPathTF.setOnAction(event -> {
                 the_selected_files_are_valid_movies();
@@ -692,6 +697,14 @@ public class Home extends Email implements Initializable {
                 } else {
                     Platform.runLater(() -> error_message("Failed!", "Your message was not sent to the developer").show());
                 }
+                this.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
+                    if (newValue != null) {
+                        Exception e = (Exception) newValue;
+                        e.printStackTrace();
+                        programmer_error(e).show();
+                        new Thread(write_stack_trace(e)).start();
+                    }
+                }));
                 return false;
             }
         };
@@ -703,13 +716,32 @@ public class Home extends Email implements Initializable {
             protected Object call() {
                 while (true) {
                     try {
-                        Platform.runLater(() -> display_all_history(create_history_list(get_app_details_as_object(new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE))))));
+                        Platform.runLater(() -> {
+                            try {
+                                display_all_history(create_history_list(get_app_details_as_object(new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE)))));
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                                new Thread(write_stack_trace(ex)).start();
+                                Platform.runLater(() -> programmer_error(ex).show());
+                            }
+                        });
                         Thread.sleep(5000);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (Exception e) {
                         e.printStackTrace();
                         break;
                     }
                 }
+
+                this.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
+                    if (newValue != null) {
+                        Exception e = (Exception) newValue;
+                        e.printStackTrace();
+                        programmer_error(e).show();
+                        new Thread(write_stack_trace(e)).start();
+                    }
+                }));
                 return null;
             }
         };
@@ -772,33 +804,39 @@ public class Home extends Email implements Initializable {
                 error_message("Hmmh, folder is empty!", "Movie hub could not find any valid video files in the folder").show();
                 return false;
             }
-            JsonElement jsonElement = new Gson().toJsonTree(trailersFolder.getAbsolutePath(), String.class);
-            JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
-            for (JsonElement jsonElement1 : jsonArray) {
-                if (jsonElement1.equals(jsonElement)) {
-                    error_message("Hmmh, duplicate found!", "Movie hub already has the path you have just selected").show();
-                    return false;
+            try {
+                JsonElement jsonElement = new Gson().toJsonTree(trailersFolder.getAbsolutePath(), String.class);
+                JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
+                for (JsonElement jsonElement1 : jsonArray) {
+                    if (jsonElement1.equals(jsonElement)) {
+                        error_message("Hmmh, duplicate found!", "Movie hub already has the path you have just selected").show();
+                        return false;
+                    }
                 }
+                jsonArray.add(jsonElement);
+                if (!write_jsonArray_to_file(jsonArray, format_path_name_to_current_os(TRAILERS_JSON_FILE))) {
+                    error_message("Failed!", "The path was not deleted!");
+                }
+                final String path = trailersFolder.getAbsolutePath();
+                trailersPathTF.setText(path);
+                recentDirectory = path;
+                final HashMap<String, String> stringStringHashMap = new HashMap<>();
+                final JsonArray jsonArray1 = get_directory_of_sub_files_in_the_provided_folder(trailersFolder);
+                for (JsonElement jsonElement1 : jsonArray1) {
+                    final String steamingMediaKey = get_unique_word_as_key(new HashMap<>());
+                    stringStringHashMap.put(steamingMediaKey, new Gson().fromJson(jsonElement1, String.class));
+                }
+                listOfTrailerIds.put(trailersFolder.getName(), stringStringHashMap);
+                return true;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                new Thread(write_stack_trace(ex)).start();
+                Platform.runLater(() -> programmer_error(ex).show());
             }
-            jsonArray.add(jsonElement);
-            if (!write_jsonArray_to_file(jsonArray, format_path_name_to_current_os(TRAILERS_JSON_FILE))) {
-                error_message("Failed!", "The path was not deleted!");
-            }
-            final String path = trailersFolder.getAbsolutePath();
-            trailersPathTF.setText(path);
-            recentDirectory = path;
-            final HashMap<String, String> stringStringHashMap = new HashMap<>();
-            final JsonArray jsonArray1 = get_directory_of_sub_files_in_the_provided_folder(trailersFolder);
-            for (JsonElement jsonElement1 : jsonArray1) {
-                final String steamingMediaKey = get_unique_word_as_key(new HashMap<>());
-                stringStringHashMap.put(steamingMediaKey, new Gson().fromJson(jsonElement1, String.class));
-            }
-            Home.listOfTrailerIds.put(trailersFolder.getName(), stringStringHashMap);
-            return true;
         } else {
             error_message("Invalid directory!", "Sadly no folder has been selected.").show();
-            return false;
         }
+        return false;
     }
 
     private Map<LocalDate, JsonArray> create_history_list(JsonArray jsonInfoArray) {
@@ -874,7 +912,6 @@ public class Home extends Email implements Initializable {
         }
     }
 
-
     private File get_name_of_the_new_destination_folder_after_its_duplicate_is_found(File destinationFolder) {
         if (destinationFolder.exists()) {
             destinationFolder = new File(destinationFolder.getAbsolutePath().concat("_").concat(String.format("%.0f", Math.random())));
@@ -884,14 +921,13 @@ public class Home extends Email implements Initializable {
         return destinationFolder;
     }
 
-
     private String get_formatted_size_of_selected_list_of_media() {
         final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
-        if (!listOfSelectedMovies.isEmpty()) {
-            allMediaPaths.addAll(listOfSelectedMovies);
+        if (!LIST_OF_SELECTED_MOVIES.isEmpty()) {
+            allMediaPaths.addAll(LIST_OF_SELECTED_MOVIES);
         }
-        if (!listOfSelectedSeries.isEmpty()) {
-            allMediaPaths.addAll(listOfSelectedSeries);
+        if (!LIST_OF_SELECTED_SERIES.isEmpty()) {
+            allMediaPaths.addAll(LIST_OF_SELECTED_SERIES);
         }
         double bytes = 0;
         for (String mediaFilePath : allMediaPaths) {
@@ -917,11 +953,11 @@ public class Home extends Email implements Initializable {
     private double get_cost_of_selected_movies_or_series_or_both(final double costPerMedia) {
         double result = 0;
         final ObservableList<String> allMediaPaths = FXCollections.observableArrayList();
-        if (!listOfSelectedMovies.isEmpty()) {
-            allMediaPaths.addAll(listOfSelectedMovies);
+        if (!LIST_OF_SELECTED_MOVIES.isEmpty()) {
+            allMediaPaths.addAll(LIST_OF_SELECTED_MOVIES);
         }
-        if (!listOfSelectedSeries.isEmpty()) {
-            allMediaPaths.addAll(listOfSelectedSeries);
+        if (!LIST_OF_SELECTED_SERIES.isEmpty()) {
+            allMediaPaths.addAll(LIST_OF_SELECTED_SERIES);
         }
         if (!allMediaPaths.isEmpty()) {
             result = costPerMedia * allMediaPaths.size();
@@ -936,7 +972,7 @@ public class Home extends Email implements Initializable {
         alert.setHeaderText("Cost is Ksh ".concat(String.format("%,.1f", cost)).concat("."));
         alert.setContentText("Click \"Start\" to begin copying the selected media.");
         final ButtonType okayBtn = new ButtonType("Start");
-        final ButtonType cancelBtn = new ButtonType("Cancel the job.");
+        final ButtonType cancelBtn = new ButtonType("Cancel the package.");
         alert.getButtonTypes().clear();
         alert.getButtonTypes().addAll(okayBtn, cancelBtn);
         final Optional<ButtonType> result = alert.showAndWait();
@@ -951,12 +987,12 @@ public class Home extends Email implements Initializable {
         return bytes;
     }
 
-    private String create_new_name_for_copy_jobs(final String sizeOfList) {
-        TextInputDialog textInputDialog = new TextInputDialog("job_" + Home.listOfCopyThreads.size());
+    private String create_name_for_new_packages(final String sizeOfList) {
+        TextInputDialog textInputDialog = new TextInputDialog("package_" + LIST_OF_COPY_THREADS.size());
         textInputDialog.initOwner(Main.stage);
         textInputDialog.setTitle("You are almost there...");
         textInputDialog.setHeaderText("List size is ".concat(sizeOfList));
-        textInputDialog.setContentText("Please enter a unique name for this job: ");
+        textInputDialog.setContentText("Please enter a unique name for this package: ");
         final Optional<String> userChoice = textInputDialog.showAndWait();
         return userChoice.orElse(null);
     }
@@ -969,16 +1005,16 @@ public class Home extends Email implements Initializable {
             }
             for (int index = 1; index <= moviesCount; ++index) {
                 final String serial = String.format("%d", index);
-                if (movieList.containsKey(serial)) {
-                    final String path = (String) movieList.get(serial);
+                if (MOVIE_LIST.containsKey(serial)) {
+                    final String path = (String) MOVIE_LIST.get(serial);
                     SelectedFile.serial = serial;
                     SelectedFile.path = path;
                     SelectedFile.category = "movie";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> moviesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedMovies.contains(SelectedFile.path)) {
-                        listOfSelectedMovies.add(SelectedFile.path);
+                    if (!LIST_OF_SELECTED_MOVIES.contains(SelectedFile.path)) {
+                        LIST_OF_SELECTED_MOVIES.add(SelectedFile.path);
                     }
                     SelectedFile.serial = "";
                     SelectedFile.path = "";
@@ -999,16 +1035,16 @@ public class Home extends Email implements Initializable {
         try {
             for (int index = 1; index <= seriesCount; ++index) {
                 final String serial = String.format("%d", index);
-                if (seriesList.containsKey(serial)) {
-                    final String path = (String) seriesList.get(serial);
+                if (SERIES_LIST.containsKey(serial)) {
+                    final String path = (String) SERIES_LIST.get(serial);
                     SelectedFile.serial = serial;
                     SelectedFile.path = path;
                     SelectedFile.category = "series";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> seriesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedSeries.contains(SelectedFile.path)) {
-                        listOfSelectedSeries.add(SelectedFile.path);
+                    if (!LIST_OF_SELECTED_SERIES.contains(SelectedFile.path)) {
+                        LIST_OF_SELECTED_SERIES.add(SelectedFile.path);
                     }
                     SelectedFile.serial = "";
                     SelectedFile.path = "";
@@ -1022,15 +1058,15 @@ public class Home extends Email implements Initializable {
     }
 
     private boolean verify_series() {
-        if (seriesPathTF.getText().trim().length() == 0 || seriesPathTF.getText() == null) {
-            return false;
-        } else {
+        if (seriesPathTF.getText().trim().length() > 0 || seriesPathTF.getText() != null) {
             seriesPathTF.setText(seriesPathTF.getText().trim().replace("\"", ""));
             File file = new File(seriesPathTF.getText());
-            if (file.isFile()) {
-                recentDirectory = file.getParentFile().getAbsolutePath();
-            } else if (file.isDirectory()) {
-                recentDirectory = seriesPathTF.getText();
+            if (file.exists()) {
+                if (file.isFile()) {
+                    recentDirectory = file.getParentFile().getAbsolutePath();
+                } else if (file.isDirectory()) {
+                    recentDirectory = seriesPathTF.getText();
+                }
             }
         }
         final DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -1061,13 +1097,13 @@ public class Home extends Email implements Initializable {
                 error_message("Hmmh, episode count error!", "Movie hub could not find any valid video files in the folder").show();
                 return false;
             }
-            if (listOfSelectedSeries.contains(seriesFolder.getAbsolutePath())) {
+            if (LIST_OF_SELECTED_SERIES.contains(seriesFolder.getAbsolutePath())) {
                 error_message("Hmmh, duplicate found!", "Movie hub already has the path to the movie you have just selected").show();
                 return false;
             }
             final String path = seriesFolder.getAbsolutePath();
             seriesPathTF.setText(path);
-            seriesList.put(String.format("%d", ++seriesCount), path);
+            SERIES_LIST.put(String.format("%d", ++seriesCount), path);
             recentDirectory = path;
         }
         return true;
@@ -1079,7 +1115,7 @@ public class Home extends Email implements Initializable {
             final File file = new File(moviesPathTF.getText());
             if (file.isFile()) {
                 //recentDirectory = file.getParentFile().getAbsolutePath();
-                recentDirectory = file.getAbsolutePath();
+                recentDirectory = file.getParentFile().getAbsolutePath();
             } else if (file.isDirectory()) {
                 recentDirectory = moviesPathTF.getText();
             }
@@ -1103,7 +1139,7 @@ public class Home extends Email implements Initializable {
             return false;
         }
         for (File movieFile : movieFiles) {
-            if (listOfSelectedMovies.contains(movieFile.getAbsolutePath())) {
+            if (LIST_OF_SELECTED_MOVIES.contains(movieFile.getAbsolutePath())) {
                 error_message("Hmmh, duplicate found!", "A movie you have selected has already been selected and it will be ignored, meanwhile stay tuned for more info").show();
                 error_message("DETAILS", movieFile.getName().concat(" is the duplicate.")).show();
             } else {
@@ -1115,7 +1151,7 @@ public class Home extends Email implements Initializable {
                         final String path = movieFile.getAbsolutePath();
                         moviesPathTF.setText(path);
                         recentDirectory = movieFile.getParentFile().getAbsolutePath();
-                        movieList.put(String.format("%d", ++moviesCount), path);
+                        MOVIE_LIST.put(String.format("%d", ++moviesCount), path);
                     } catch (Exception e) {
                         e.printStackTrace();
                         programmer_error(e).show();
@@ -1135,16 +1171,16 @@ public class Home extends Email implements Initializable {
         try {
             for (int index = 1; index <= seriesCount; ++index) {
                 final String serial = String.format("%d", index);
-                if (seriesList.containsKey(serial)) {
-                    final String path = (String) seriesList.get(serial);
+                if (SERIES_LIST.containsKey(serial)) {
+                    final String path = (String) SERIES_LIST.get(serial);
                     SelectedFile.serial = serial;
                     SelectedFile.path = path;
                     SelectedFile.category = "series";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> seriesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedSeries.contains(SelectedFile.path)) {
-                        listOfSelectedSeries.add(SelectedFile.path);
+                    if (!LIST_OF_SELECTED_SERIES.contains(SelectedFile.path)) {
+                        LIST_OF_SELECTED_SERIES.add(SelectedFile.path);
                     }
                     SelectedFile.serial = "";
                     SelectedFile.path = "";
@@ -1166,16 +1202,16 @@ public class Home extends Email implements Initializable {
         try {
             for (int index = 1; index <= moviesCount; ++index) {
                 final String serial = String.format("%d", index);
-                if (movieList.containsKey(serial)) {
-                    final String path = (String) movieList.get(serial);
+                if (MOVIE_LIST.containsKey(serial)) {
+                    final String path = (String) MOVIE_LIST.get(serial);
                     SelectedFile.serial = serial;
                     SelectedFile.path = path;
                     SelectedFile.category = "movie";
                     final Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/selectedMediaDirectoryUI.fxml"));
                     Platform.runLater(() -> moviesBox.getChildren().add(node));
                     new SlideInRight(node).play();
-                    if (!listOfSelectedMovies.contains(SelectedFile.path)) {
-                        listOfSelectedMovies.add(SelectedFile.path);
+                    if (!LIST_OF_SELECTED_MOVIES.contains(SelectedFile.path)) {
+                        LIST_OF_SELECTED_MOVIES.add(SelectedFile.path);
                     }
                     SelectedFile.serial = "";
                     SelectedFile.path = "";

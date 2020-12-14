@@ -166,11 +166,15 @@ public class Watchdog extends Assistant {
     }
 
     private String gate_date_for_file_name() {
-        return new SimpleDateFormat("dd-MMM-yyyy").format(Calendar.getInstance().getTime()).replaceAll("-", " ");
+        return get_date().replaceAll("-", " ");
     }
 
     protected String time_stamp() {
-        return get_date() + " at " + new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
+        return get_date() + " at " + get_time();
+    }
+
+    protected String get_time() {
+        return new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime());
     }
 
     protected String get_date() {

@@ -8,28 +8,27 @@ import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import org._movie_hub._next_gen_edition.Main;
-import org._movie_hub._next_gen_edition._controller.Home;
+import org._movie_hub._next_gen_edition._enum.OperatingSystem;
 import org._movie_hub._next_gen_edition._object.Category;
+import org._movie_hub._next_gen_edition._object.JobPackage;
 import org._movie_hub._next_gen_edition._object.Media;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,36 +39,41 @@ import java.util.List;
 public abstract class Assistant {
 
     protected final String TRAILER_KEY_JSON_FILE = Main.RESOURCE_PATH.getAbsolutePath().concat("\\_config\\trailerKey.json");
-    protected final String APP_JSON_FILE = Main.RESOURCE_PATH.getAbsolutePath().concat("\\_config\\app.json");
+    private final String APP_JSON_FILE = Main.RESOURCE_PATH.getAbsolutePath().concat("\\_config\\app.json");
+
     protected final String EXTENSIONS_SUPPORTED_BY_VLC = ".asx:.dts:.gxf:.m2v:.m3u:.m4v:.mpeg1:.mpeg2:.mts:.mxf:.pls:.divx:.dv:.flv:.m1v:.m2ts:.mkv:.mov:.mpeg4:.ts:.vlc:.vob:.3g2:.avi:.mpeg:.mpg:.m4a:.3gp:.srt:.wmv:.asf:.mp4:.m4p";
+    protected final static String EXTENSIONS_FOR_MOVIES_ONLY = ".m4v:.mpeg1:.mpeg2:.flv:.mkv:.mov:.mpeg4:.vob:.avi:.mpeg:.m4a:.3gp:.mp4:.m4p";
+
+    protected final static HashMap<String, JobPackage> LIST_OF_COPY_THREADS = new HashMap<>();
+    protected final static HashMap<String, JobPackage> STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD = new HashMap<>();
+    protected final static ObservableList<String> listOfStartedThreads = FXCollections.observableArrayList();
+
+    protected final static com.github.cliftonlabs.json_simple.JsonObject MOVIE_LIST = new com.github.cliftonlabs.json_simple.JsonObject();
+    protected final static com.github.cliftonlabs.json_simple.JsonObject SERIES_LIST = new com.github.cliftonlabs.json_simple.JsonObject();
+    protected final static List<String> LIST_OF_SELECTED_MOVIES = new ArrayList<>();
+    protected final static List<String> LIST_OF_SELECTED_SERIES = new ArrayList<>();
+
+    protected static HashMap<String, HashMap<String, String>> listOfTrailerIds;
+
+    protected static String taskRequested;
 
     protected String format_path_name_to_current_os(String myPath) {
         String myOperatingSystemSlash = get_slash_for_my_os();
-        if (myOperatingSystemSlash == null) {
-            return myPath;
-        }
-        if (!myPath.contains(myOperatingSystemSlash)) {
-            myPath = myPath.replace("\\", myOperatingSystemSlash);
+        if (myOperatingSystemSlash != null) {
+            if (!myOperatingSystemSlash.equals(OperatingSystem.WINDOWS.getSlash())) {
+                myPath = myPath.replace(OperatingSystem.WINDOWS.getSlash(), myOperatingSystemSlash);
+            }
         }
         return myPath;
     }
 
     private String get_slash_for_my_os() {
         String OS = System.getProperty("os.name").toLowerCase();
-        if (OS.contains("win")) {
-            //windows
-            return "\\";
-        } else if (OS.contains("mac")) {
-            //mac
-            return "/";
-        } else if (OS.contains("nix") || OS.contains("nux") || OS.contains("aix")) {
-            //unix
-            return "/";
-        } else if (OS.contains("sunos")) {
-            //solaris
-            return "/";
-        } else {
+        OperatingSystem myOperatingSystem = Arrays.stream(OperatingSystem.values()).filter(operatingSystem -> OS.contains(operatingSystem.getOs())).findFirst().orElse(null);
+        if (myOperatingSystem == null) {
             return null;
+        } else {
+            return myOperatingSystem.getSlash();
         }
     }
 
@@ -127,7 +131,7 @@ public abstract class Assistant {
     }
 
     private boolean is_an_episode(File file) {
-        final String[] extensions = Home.EXTENSIONS_FOR_MOVIES_ONLY.split(":");
+        final String[] extensions = EXTENSIONS_FOR_MOVIES_ONLY.split(":");
         for (String string : extensions) {
             if (StringUtils.endsWithIgnoreCase(file.getName(), string)) {
                 return true;
@@ -266,17 +270,12 @@ public abstract class Assistant {
         return result;
     }
 
-    protected JsonArray get_app_details_as_object(File file) {
-        try {
-            final BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-            final JsonArray jsonArray = new Gson().fromJson(bufferedReader, JsonArray.class);
-            bufferedReader.close();
-            return jsonArray;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            new Watchdog().programmer_error(ex).show();
-        }
-        return new JsonArray();
+    protected JsonArray get_app_details_as_object(File file) throws IOException {
+        final BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+        final JsonArray jsonArray = new JsonArray();
+        jsonArray.addAll(new Gson().fromJson(bufferedReader, JsonArray.class));
+        bufferedReader.close();
+        return jsonArray;
     }
 
     protected Alert show_qr_image_for_upload(File imageFile) throws FileNotFoundException {
@@ -322,13 +321,13 @@ public abstract class Assistant {
             return jsonObject;
         } catch (IOException ex) {
             ex.printStackTrace();
-            new Watchdog().programmer_error(ex).show();
+            Platform.runLater(() -> new Watchdog().programmer_error(ex).show());
         }
         return new JsonObject();
     }
 
     protected void update_trailer_and_playlist_key() {
-        Home.listOfTrailerIds = make_map(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE));
+        listOfTrailerIds = make_map(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE));
     }
 
     protected JsonArray extract_from_hashmap(HashMap<String, String> stringStringHashMap) {
@@ -355,16 +354,22 @@ public abstract class Assistant {
 
     protected HashMap<String, HashMap<String, String>> make_map(String fileName) {
         final HashMap<String, HashMap<String, String>> stringHashMapHashMap = new HashMap<>();
-        final JsonArray jsonArray = get_app_details_as_object(new File(fileName));
-        jsonArray.forEach(jsonElement -> {
-            final Category category = new Gson().fromJson(jsonElement, Category.class);
-            final HashMap<String, String> mediaNames = new HashMap<>();
-            category.getMedia().forEach(jsonElement1 -> {
-                final Media media = new Gson().fromJson(jsonElement1, Media.class);
-                mediaNames.put(media.getKey(), media.getValue());
+        try {
+            final JsonArray jsonArray = get_app_details_as_object(new File(fileName));
+            jsonArray.forEach(jsonElement -> {
+                final Category category = new Gson().fromJson(jsonElement, Category.class);
+                final HashMap<String, String> mediaNames = new HashMap<>();
+                category.getMedia().forEach(jsonElement1 -> {
+                    final Media media = new Gson().fromJson(jsonElement1, Media.class);
+                    mediaNames.put(media.getKey(), media.getValue());
+                });
+                stringHashMapHashMap.put(category.getName(), mediaNames);
             });
-            stringHashMapHashMap.put(category.getName(), mediaNames);
-        });
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            new Thread(new Watchdog().write_stack_trace(ex)).start();
+            Platform.runLater(() -> new Watchdog().programmer_error(ex).show());
+        }
         return stringHashMapHashMap;
     }
 
@@ -388,7 +393,7 @@ public abstract class Assistant {
     }
 
     protected boolean is_a_playable(File file) {
-        final String[] extensions = Home.EXTENSIONS_FOR_MOVIES_ONLY.split(":");
+        final String[] extensions = EXTENSIONS_FOR_MOVIES_ONLY.split(":");
         for (String string : extensions) {
             if (file.getName().endsWith(string) || file.getName().endsWith(string.toUpperCase())) {
                 return true;
@@ -462,7 +467,7 @@ public abstract class Assistant {
             return true;
         } catch (IOException ex) {
             ex.printStackTrace();
-            new Watchdog().programmer_error(ex).show();
+            Platform.runLater(() -> new Watchdog().programmer_error(ex).show());
         }
         return false;
     }

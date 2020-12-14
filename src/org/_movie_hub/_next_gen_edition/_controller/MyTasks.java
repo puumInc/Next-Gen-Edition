@@ -14,15 +14,13 @@ import javafx.scene.layout.VBox;
 import org._movie_hub._next_gen_edition._api.Server;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
 import org._movie_hub._next_gen_edition._object.History;
-import org._movie_hub._next_gen_edition._object.Job;
+import org._movie_hub._next_gen_edition._object.JobPackage;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,7 +33,7 @@ public class MyTasks extends Watchdog implements Initializable {
     protected static String taskName;
     private final AtomicBoolean isPaused = new AtomicBoolean();
     private final JsonObject copiedItems = new JsonObject();
-    private Job myJob;
+    private JobPackage myJobPackage;
     private Thread thread;
     private String TIME_IT_STARTED;
     private File QR_CODE_IMAGE_FILE;
@@ -53,13 +51,13 @@ public class MyTasks extends Watchdog implements Initializable {
     private void cancel_copy_task(ActionEvent event) {
         try {
             if (thread == null) {
-                Home.listOfUploadThreads.remove(taskName);
+                STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.remove(taskName);
             } else {
                 thread.interrupt();
                 thread.join();
             }
-            final VBox vBox = (VBox) taskNameLbl.getParent().getParent().getParent().getParent();
             final Node currentNode = taskNameLbl.getParent().getParent().getParent();
+            final VBox vBox = (VBox) currentNode.getParent();
             new SlideOutLeft(currentNode).play();
             Platform.runLater(() -> {
                 new SlideOutLeft(currentNode);
@@ -96,58 +94,63 @@ public class MyTasks extends Watchdog implements Initializable {
                 }
             }
         }*/
+        event.consume();
     }
 
     @FXML
     private void show_task_files(ActionEvent event) {
-        show_list_of_copied_media("You are viewing ".concat(this.myJob.getJobName()), generate_a_string_from_list_of_media_paths(get_file_names(this.myJob.getAllMediaPaths()))).show();
-        if (QR_CODE_IMAGE_FILE != null) {
-            try {
-                show_qr_image_for_upload(QR_CODE_IMAGE_FILE).show();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                new Thread(write_stack_trace(e)).start();
-                programmer_error(e).show();
+        if (this.myJobPackage != null) {
+            show_list_of_copied_media("You are viewing ".concat(this.myJobPackage.getName()), generate_a_string_from_list_of_media_paths(get_file_names(this.myJobPackage.getAllMediaPaths()))).show();
+            if (this.QR_CODE_IMAGE_FILE != null) {
+                try {
+                    show_qr_image_for_upload(this.QR_CODE_IMAGE_FILE).show();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    new Thread(write_stack_trace(e)).start();
+                    programmer_error(e).show();
+                }
             }
         }
+        event.consume();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        System.out.println("LIST_OF_COPY_THREADS = " + LIST_OF_COPY_THREADS);
         isPaused.set(false);
         taskNameLbl.setText(MyTasks.taskName);
-        if (Home.listOfCopyThreads.containsKey(MyTasks.taskName)) {
-            this.myJob = Home.listOfCopyThreads.get(MyTasks.taskName);
-        } else if (Home.listOfUploadThreads.containsKey(MyTasks.taskName)) {
-            this.myJob = Home.listOfUploadThreads.get(MyTasks.taskName);
-            QR_CODE_IMAGE_FILE = get_a_qr_image_file_that_has_an_embedded_logo(this.myJob.getJobName());
+        if (LIST_OF_COPY_THREADS.containsKey(MyTasks.taskName)) {
+            this.myJobPackage = LIST_OF_COPY_THREADS.get(MyTasks.taskName);
+        } else if (STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.containsKey(MyTasks.taskName)) {
+            this.myJobPackage = STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.get(MyTasks.taskName);
+            this.QR_CODE_IMAGE_FILE = get_a_qr_image_file_that_has_an_embedded_logo(this.myJobPackage.getName());
         } else {
-            taskNameLbl.setText(MyTasks.taskName.concat("## NOT FOUND"));
+            taskNameLbl.setText(MyTasks.taskName.concat("  [ERR:NOT_FOUND]"));
             return;
         }
         taskStatusBar.setProgress(0);
         taskStatusBar.progressProperty().unbind();
-        if (!this.myJob.isForUpload()) {
-            final Task<String> task = copy_selected_media_list(this.myJob.getDestinationFolder(),
-                    this.myJob.getJobName(), this.myJob.getAllMediaPaths());
+        if (!this.myJobPackage.isForUpload()) {
+            final Task<String> task = copy_selected_media_list(this.myJobPackage.getDestinationFolder(),
+                    this.myJobPackage.getName(), this.myJobPackage.getAllMediaPaths());
             task.setOnSucceeded(event1 -> {
                 if (task.getValue() != null) {
                     final History history = new History();
                     history.setTimeWhenItStarted(TIME_IT_STARTED);
                     history.setTimeWhenItStopped(task.getValue());
                     history.setDate(get_date());
-                    history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
+                    history.setJobName(this.myJobPackage.getName().concat("(Cp2D)"));
                     history.setListOfMedia(new ArrayList<>());
                     history.setStatus("COMPLETE");
                     String path = "==================================================\n"
                             .concat("From: ".concat(TIME_IT_STARTED).concat("\n"))
                             .concat("To: ".concat(task.getValue()).concat("\n"))
-                            .concat("Job name: ".concat(myJob.getJobName()).concat("\n"))
-                            .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJob.getCost())).concat("\n"))
+                            .concat("JobPackage name: ".concat(myJobPackage.getName()).concat("\n"))
+                            .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJobPackage.getCost())).concat("\n"))
                             .concat("The following files were copied:\n");
                     int index = 1;
                     history.setListOfMedia(new ArrayList<>());
-                    final List<?> objectList = (List<?>) copiedItems.get(this.myJob.getJobName());
+                    final List<?> objectList = (List<?>) copiedItems.get(this.myJobPackage.getName());
                     for (Object object : objectList) {
                         history.getListOfMedia().add(new File(object.toString()).getName());
                         path = path.concat(index + ".)".concat(new File(object.toString()).getName().concat("\n\t@SOURCE_PATH { ".concat(object.toString()).concat(" }\n"))));
@@ -155,13 +158,14 @@ public class MyTasks extends Watchdog implements Initializable {
                     }
                     path = path.concat("\n\n");
                     new Thread(write_log(path, history)).start();
-                    create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJob.getJobName(),
-                            path, this.myJob.getDestinationFolder());
-                    success_notification("List " + this.myJob.getJobName() + " has been copied completely.").show();
-                    copiedItems.remove(myJob.getJobName());
-                    Home.listOfCopyThreads.remove(myJob.getJobName());
-                    final VBox vBox = (VBox) taskNameLbl.getParent().getParent().getParent().getParent();
+                    create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJobPackage.getName(),
+                            path, this.myJobPackage.getDestinationFolder());
+                    success_notification("List " + this.myJobPackage.getName() + " has been copied completely.").show();
+                    copiedItems.remove(myJobPackage.getName());
+                    LIST_OF_COPY_THREADS.remove(myJobPackage.getName());
                     final Node currentNode = taskNameLbl.getParent().getParent().getParent();
+                    final VBox vBox = (VBox) currentNode.getParent();
+
                     new SlideOutLeft(currentNode).play();
                     Platform.runLater(() -> {
                         new SlideOutLeft(currentNode);
@@ -171,48 +175,48 @@ public class MyTasks extends Watchdog implements Initializable {
                 }
             });
             task.setOnFailed(event -> {
-                Home.listOfCopyThreads.remove(this.myJob.getJobName());
-                final String END_TIME = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+                LIST_OF_COPY_THREADS.remove(this.myJobPackage.getName());
+                final String END_TIME = "[".concat(get_time()).concat("]");
                 final History history = new History();
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
+                history.setJobName(this.myJobPackage.getName().concat("(Cp2D)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("INCOMPLETE");
                 String path = "==================================================\n"
                         .concat("From: ".concat(TIME_IT_STARTED).concat("\n"))
                         .concat("To: ".concat(END_TIME).concat("\n"))
-                        .concat("Job name: ".concat(this.myJob.getJobName()).concat("\n"))
-                        .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJob.getCost())).concat("\n\n"))
+                        .concat("JobPackage name: ".concat(this.myJobPackage.getName()).concat("\n"))
+                        .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJobPackage.getCost())).concat("\n\n"))
                         .concat("FAILED, Something happened!\n")
                         .concat("ERR>>This job was interrupted!\n\n")
                         .concat("The following files were expected to be copied:\n");
                 int index = 1;
-                final List<String> objectList = this.myJob.getAllMediaPaths();
+                final List<String> objectList = this.myJobPackage.getAllMediaPaths();
                 for (String pathToMedia : objectList) {
                     history.getListOfMedia().add(new File(pathToMedia).getName());
                     path = path.concat(index + ".)".concat(new File(pathToMedia).getName().concat("\t\t@SOURCE_PATH { ".concat(pathToMedia).concat(" }\n"))));
                     ++index;
                 }
                 new Thread(write_log(path, history)).start();
-                create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJob.getJobName(), path, this.myJob.getDestinationFolder());
-                final VBox vBox = (VBox) taskNameLbl.getParent().getParent().getParent();
-                final Node currentNode = taskNameLbl.getParent().getParent();
+                create_a_text_file_then_write_into_it_the_list_of_files_that_have_been_copied(this.myJobPackage.getName(), path, this.myJobPackage.getDestinationFolder());
+                final Node currentNode = taskNameLbl.getParent().getParent().getParent();
+                final VBox vBox = (VBox) currentNode.getParent();
                 Platform.runLater(() -> {
                     new SlideOutLeft(currentNode);
                     VBox.clearConstraints(currentNode);
                     vBox.getChildren().remove(currentNode);
                 });
-                warning_message("\"".concat(this.myJob.getJobName()).concat("\" did not complete!"), "Sadly some or all media failed to copy.").show();
+                warning_message("\"".concat(this.myJobPackage.getName()).concat("\" did not complete!"), "Sadly some or all media failed to copy.").show();
             });
-            task.setOnRunning(event -> Platform.runLater(() -> information_message(this.myJob.getJobName() + " has been started. Its status is now ACTIVE")));
+            task.setOnRunning(event -> Platform.runLater(() -> information_message(this.myJobPackage.getName() + " has been started. Its status is now ACTIVE")));
             task.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
                 if (newValue != null) {
                     Exception e = (Exception) newValue;
                     e.printStackTrace();
-                    if (e.getLocalizedMessage().equalsIgnoreCase("there is not enough space on disk")) {
-                        Platform.runLater(() -> error_message("Incomplete!", e.getLocalizedMessage()).show());
+                    if (e.toString().equalsIgnoreCase("there is not enough space on disk")) {
+                        Platform.runLater(() -> error_message("Incomplete!", "There is not enough space on disk").show());
                         return;
                     }
                     programmer_error(e).show();
@@ -223,26 +227,26 @@ public class MyTasks extends Watchdog implements Initializable {
         }
         Task<Object> animatedTask;
         taskStatusBar.setProgress(0);
-        final String TIME_IT_STARTED = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
-        if (this.myJob.isForUpload()) {
-            animatedTask = copy_progress(this.myJob.getSourceSize());
+        final String TIME_IT_STARTED = "[".concat(get_time()).concat("]");
+        if (this.myJobPackage.isForUpload()) {
+            animatedTask = copy_progress(this.myJobPackage.getSourceSize());
             animatedTask.setOnSucceeded(event -> {
-                final String END_TIME = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+                final String END_TIME = "[".concat(get_time()).concat("]");
                 final History history = new History();
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(U)"));
+                history.setJobName(this.myJobPackage.getName().concat("(U)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("COMPLETE");
-                final List<String> objectList = this.myJob.getAllMediaPaths();
+                final List<String> objectList = this.myJobPackage.getAllMediaPaths();
                 for (String pathToMedia : objectList) {
                     history.getListOfMedia().add(new File(pathToMedia).getName());
                 }
                 new Thread(write_log("Upload ready!", history)).start();
                 taskStatusBar.progressProperty().unbind();
-                final VBox vBox = (VBox) taskNameLbl.getParent().getParent().getParent();
-                final Node currentNode = taskNameLbl.getParent().getParent();
+                final Node currentNode = taskNameLbl.getParent().getParent().getParent();
+                final VBox vBox = (VBox) currentNode.getParent();
                 new SlideOutLeft(currentNode).play();
                 Platform.runLater(() -> {
                     new SlideOutLeft(currentNode);
@@ -251,38 +255,38 @@ public class MyTasks extends Watchdog implements Initializable {
                 });
             });
             animatedTask.setOnFailed(event -> {
-                final String END_TIME = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+                final String END_TIME = "[".concat(get_time()).concat("]");
                 final History history = new History();
                 history.setTimeWhenItStarted(TIME_IT_STARTED);
                 history.setTimeWhenItStopped(END_TIME);
                 history.setDate(get_date());
-                history.setJobName(this.myJob.getJobName().concat("(Cp2D)"));
+                history.setJobName(this.myJobPackage.getName().concat("(Cp2D)"));
                 history.setListOfMedia(new ArrayList<>());
                 history.setStatus("INCOMPLETE");
                 String path = "==================================================\n"
                         .concat("From: ".concat(TIME_IT_STARTED).concat("\n"))
                         .concat("To: ".concat(END_TIME).concat("\n"))
-                        .concat("Job name: ".concat(this.myJob.getJobName()).concat("\n"))
-                        .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJob.getCost())).concat("\n\n"))
+                        .concat("JobPackage name: ".concat(this.myJobPackage.getName()).concat("\n"))
+                        .concat("Cost Ksh ".concat(String.format("%,.1f", this.myJobPackage.getCost())).concat("\n\n"))
                         .concat("FAILED, Something happened!\n")
                         .concat("ERR>>This job was interrupted!\n\n")
                         .concat("The following files were expected to be copied:\n");
                 int index = 1;
-                final List<String> objectList = this.myJob.getAllMediaPaths();
+                final List<String> objectList = this.myJobPackage.getAllMediaPaths();
                 for (String pathToMedia : objectList) {
                     history.getListOfMedia().add(new File(pathToMedia).getName());
                     path = path.concat(index + ".)".concat(new File(pathToMedia).getName().concat("\t\t@SOURCE_PATH { ".concat(pathToMedia).concat(" }\n"))));
                     ++index;
                 }
                 new Thread(write_log(path, history)).start();
-                final VBox vBox = (VBox) taskNameLbl.getParent().getParent().getParent();
-                final Node currentNode = taskNameLbl.getParent().getParent();
+                final Node currentNode = taskNameLbl.getParent().getParent().getParent();
+                final VBox vBox = (VBox) currentNode.getParent();
                 Platform.runLater(() -> {
                     new SlideOutLeft(currentNode);
                     VBox.clearConstraints(currentNode);
                     vBox.getChildren().remove(currentNode);
                 });
-                warning_message("\"".concat(this.myJob.getJobName()).concat("\" did not complete!"), "Sadly some or all media failed to upload to the customer's phone.").show();
+                warning_message("\"".concat(this.myJobPackage.getName()).concat("\" did not complete!"), "Sadly some or all media failed to upload to the customer's phone.").show();
             });
             animatedTask.exceptionProperty().addListener(((observable, oldValue, newValue) -> {
                 if (newValue != null) {
@@ -293,26 +297,26 @@ public class MyTasks extends Watchdog implements Initializable {
                 }
             }));
         } else {
-            animatedTask = copy_progress(this.myJob.getSourceSize(), this.myJob.getDestinationFolder());
+            animatedTask = copy_progress(this.myJobPackage.getSourceSize(), this.myJobPackage.getDestinationFolder());
         }
         taskStatusBar.progressProperty().bind(animatedTask.progressProperty());
-        if (!this.myJob.isForUpload()) {
+        if (!this.myJobPackage.isForUpload()) {
             thread.start();
         }
         new Thread(animatedTask).start();
-        Home.listOfStartedThreads.remove(taskName);
+        listOfStartedThreads.remove(taskName);
     }
 
     protected Task<Object> copy_progress(double jobSizeAsBytes) {
         final double TOTAL_SIZE_IN_MB = ((jobSizeAsBytes / 1024) / 1024);
         return new Task<Object>() {
             @Override
-            protected Object call() throws InterruptedException {
+            protected Object call() {
                 while (true) {
                     updateProgress(0, 1);
                     if (Server.taskRequested != null) {
-                        if (Home.listOfUploadThreads.containsKey(Server.taskRequested)) {
-                            if (Home.listOfUploadThreads.get(Server.taskRequested).getJobName().equals(taskName)) {
+                        if (STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.containsKey(Server.taskRequested)) {
+                            if (STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.get(Server.taskRequested).getName().equals(taskName)) {
                                 Server.taskRequested = null;
                                 break;
                             }
@@ -320,24 +324,37 @@ public class MyTasks extends Watchdog implements Initializable {
                     }
                     Platform.runLater(() -> sizeDifferenceLbl.setText("Waiting to be claimed"));
                     for (int count = 0; count < 3; ++count) {
-                        Thread.sleep(1000);
                         Platform.runLater(() -> sizeDifferenceLbl.setText(sizeDifferenceLbl.getText().concat(" . ")));
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
                     Platform.runLater(() -> sizeDifferenceLbl.setText("Waiting to be claimed"));
                 }
-                TIME_IT_STARTED = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+                TIME_IT_STARTED = "[".concat(get_time()).concat("]");
                 double megabytes = 0;
                 while (megabytes <= TOTAL_SIZE_IN_MB) {
                     if (!isPaused.get()) {
-                        Thread.sleep(10);
-                        myJob.setByteSent(Home.listOfUploadThreads.get(taskName).getByteSent());
-                        double bytes = myJob.getByteSent();
-                        double kilobytes = (bytes / 1024);
-                        megabytes = (kilobytes / 1024);
-                        updateProgress(megabytes, TOTAL_SIZE_IN_MB);
-                        final double currentMb = megabytes;
-                        final double currentBytes = bytes;
-                        Platform.runLater(() -> sizeDifferenceLbl.setText("Uploaded ".concat(make_bytes_more_presentable(currentBytes)).concat(" of ").concat(make_bytes_more_presentable(jobSizeAsBytes))));
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            myJobPackage.setByteSent(STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.get(taskName).getByteSent());
+                            double bytes = myJobPackage.getByteSent();
+                            double kilobytes = (bytes / 1024);
+                            megabytes = (kilobytes / 1024);
+                            updateProgress(megabytes, TOTAL_SIZE_IN_MB);
+                            final double currentBytes = bytes;
+                            Platform.runLater(() -> sizeDifferenceLbl.setText(
+                                    "Uploaded "
+                                            .concat(make_bytes_more_presentable(currentBytes)).concat(" of ")
+                                            .concat(make_bytes_more_presentable(jobSizeAsBytes))
+                                    )
+                            );
+                        }
                     }
                 }
                 return null;
@@ -374,7 +391,7 @@ public class MyTasks extends Watchdog implements Initializable {
 
     @NotNull
     protected Task<String> copy_selected_media_list(final File destinationPath, final String jobName, List<String> allMediaPaths) {
-        TIME_IT_STARTED = "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+        TIME_IT_STARTED = "[".concat(get_time()).concat("]");
         final List<Object> objectList = new ArrayList<>();
         return new Task<String>() {
             @Override
@@ -402,31 +419,27 @@ public class MyTasks extends Watchdog implements Initializable {
                                 }
                             }
                         }
-                    } catch (NullPointerException e) {
-                        Platform.runLater(() -> error_message_alert("Something is missing (null).", e.getLocalizedMessage()).show());
-                        return null;
                     } catch (IOException e) {
                         e.printStackTrace();
-                        if (e.getLocalizedMessage().contains("are the same")) {
+                        if (e.toString().contains("are the same")) {
                             Platform.runLater(() -> error_message("File already exists", "Please select another file from else where other than the 'safe zone' files.").show());
-                        } else if (e.getLocalizedMessage().contains("not enough space on disk")) {
-                            error_message("Not enough Space!", e.getLocalizedMessage()).show();
-                        } else {
-                            new Thread(write_stack_trace(e)).start();
-                            Platform.runLater(() -> programmer_error(e).show());
+                        } else if (e.toString().contains("not enough space on disk")) {
+                            Platform.runLater(() -> error_message("Incomplete!", "There is not enough space on disk").show());
                         }
+                        new Thread(write_stack_trace(e)).start();
+                        Platform.runLater(() -> programmer_error(e).show());
                         return null;
                     } catch (Exception e) {
                         e.printStackTrace();
-                        Platform.runLater(() -> programmer_error(e).show());
                         new Thread(write_stack_trace(e)).start();
+                        Platform.runLater(() -> programmer_error(e).show());
                         return null;
                     }
                 }
                 if (!copiedItems.containsKey(jobName)) {
                     copiedItems.put(jobName, objectList);
                 }
-                return "[".concat(new SimpleDateFormat("HH:mm:ss:SSS").format(Calendar.getInstance().getTime())).concat("]");
+                return "[".concat(get_time()).concat("]");
             }
         };
     }
@@ -437,18 +450,25 @@ public class MyTasks extends Watchdog implements Initializable {
         final double TOTAL_SIZE_IN_MB = ((jobSizeAsBytes / 1024) / 1024);
         return new Task<Object>() {
             @Override
-            protected Object call() throws InterruptedException {
+            protected Object call() {
                 double megabytes = 0;
                 while (megabytes <= TOTAL_SIZE_IN_MB) {
                     if (!isPaused.get()) {
-                        Thread.sleep(10);
-                        double bytes = get_folder_size(destinationFolder);
-                        bytes -= originalBytesBeforeCopy;
-                        double kilobytes = (bytes / 1024);
-                        megabytes = (kilobytes / 1024);
-                        updateProgress(megabytes, TOTAL_SIZE_IN_MB);
-                        final double currentBytes = bytes;
-                        Platform.runLater(() -> sizeDifferenceLbl.setText("Copied ".concat(make_bytes_more_presentable(currentBytes)).concat(" of ").concat(make_bytes_more_presentable(jobSizeAsBytes))));
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            double bytes = get_folder_size(destinationFolder);
+                            bytes -= originalBytesBeforeCopy;
+                            double kilobytes = (bytes / 1024);
+                            megabytes = (kilobytes / 1024);
+                            updateProgress(megabytes, TOTAL_SIZE_IN_MB);
+                            final double currentBytes = bytes;
+                            Platform.runLater(() -> sizeDifferenceLbl.setText("Copied "
+                                    .concat(make_bytes_more_presentable(currentBytes)).concat(" of ")
+                                    .concat(make_bytes_more_presentable(jobSizeAsBytes))));
+                        }
                     }
                 }
                 return null;

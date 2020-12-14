@@ -9,11 +9,11 @@ import java.util.List;
 /**
  * @author Mandela aka puumInc
  */
-public class Job implements Serializable {
+public class JobPackage implements Serializable {
 
     public static final long serialVersionUID = 1L;
 
-    private String jobName;
+    private String name;
     private File destinationFolder;
     private List<String> allMediaPaths;
     private double cost;
@@ -21,12 +21,12 @@ public class Job implements Serializable {
     private boolean forUpload;
     private double byteSent;
 
-    public String getJobName() {
-        return jobName;
+    public String getName() {
+        return name;
     }
 
-    public void setJobName(String jobName) {
-        this.jobName = jobName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public File getDestinationFolder() {

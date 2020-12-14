@@ -38,11 +38,11 @@ public class SelectedFile extends Watchdog implements Initializable {
         final String id = strings[0];
         final String type = strings[1];
         if (type.equals("movie")) {
-            Home.movieList.remove(id);
-            Home.listOfSelectedMovies.remove(pathTF.getTooltip().getText());
+            MOVIE_LIST.remove(id);
+            LIST_OF_SELECTED_MOVIES.remove(pathTF.getTooltip().getText());
         } else {
-            Home.seriesList.remove(id);
-            Home.listOfSelectedSeries.remove(pathTF.getTooltip().getText());
+            SERIES_LIST.remove(id);
+            LIST_OF_SELECTED_SERIES.remove(pathTF.getTooltip().getText());
         }
         VBox vBox = (VBox) pathTF.getParent().getParent().getParent();
         Node currentNode = pathTF.getParent().getParent();

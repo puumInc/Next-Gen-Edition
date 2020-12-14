@@ -19,7 +19,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.SVGPath?>
 
-<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1280.0" style="-fx-background-color: #323232;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org._movie_hub._next_gen_edition._controller.Home">
+<StackPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1300.0" style="-fx-background-color: #323232;" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org._movie_hub._next_gen_edition._controller.Home">
     <children>
       <AnchorPane prefHeight="200.0" prefWidth="200.0">
          <children>
@@ -157,10 +157,10 @@
                                                                         </StackPane>
                                                                     </content>
                                                                 </ScrollPane>
-                                                                <Label layoutX="132.0" styleClass="title" text="Jobs in progress" textFill="WHITE" />
+                                                                <Label layoutX="149.0" layoutY="21.0" styleClass="title" text="Jobs in progress" textFill="WHITE" />
                                                             </children>
                                                         </AnchorPane>
-                                                        <JFXButton layoutX="169.0" layoutY="583.0" onAction="#go_back_to_select_an_action" prefHeight="43.0" prefWidth="160.0" ripplerFill="#6e6514" style="-fx-background-radius: 2px; -fx-text-fill: linear-gradient(#FFB900, #F0D801);" styleClass="selecting_either_series_or_movie_button" text="back" textFill="#fae800" />
+                                                        <JFXButton layoutX="199.0" layoutY="583.0" onAction="#go_back_to_select_an_action" prefHeight="43.0" prefWidth="100.0" ripplerFill="#6e6514" style="-fx-background-radius: 2px; -fx-text-fill: linear-gradient(#FFB900, #F0D801);" styleClass="selecting_either_series_or_movie_button" text="back" textFill="#fae800" />
                                                     </children>
                                                 </AnchorPane>
                                                 <Label id="emptyListText" fx:id="emptyListLbl" text="No file(s) found to copy !" textFill="WHITE" />
@@ -257,7 +257,7 @@
                                     <children>
                                         <AnchorPane prefHeight="400.0" prefWidth="600.0">
                                             <children>
-                                                <Label layoutX="594.0" layoutY="77.0" styleClass="title" text="Movies" textFill="WHITE" />
+                                                <Label layoutX="595.0" layoutY="77.0" styleClass="title" text="Movies" textFill="WHITE" />
                                                 <HBox layoutX="188.0" layoutY="186.0" prefHeight="43.0" prefWidth="943.0" spacing="50.0">
                                                     <children>
                                                         <JFXButton fx:id="forMovies" onAction="#choose_directory" prefHeight="43.0" prefWidth="119.0" ripplerFill="#a1961e" style="-fx-border-color: linear-gradient(#FFB900, #F0D801); -fx-background-radius: 2px; -fx-border-radius: 2px;" styleClass="buttons_with_white_text_and_yellow_border_line" text="Choose file" textFill="WHITE" />
@@ -280,7 +280,7 @@
                                                 </ScrollPane>
                                                 <VBox alignment="TOP_CENTER" layoutX="516.0" layoutY="575.0" prefHeight="127.0" prefWidth="288.0" spacing="10.0">
                                                     <children>
-                                                        <JFXButton graphicTextGap="10.0" onAction="#go_to_series" prefHeight="45.0" prefWidth="291.0" ripplerFill="#464646" style="-fx-background-radius: 2px; -fx-text-fill: linear-gradient(#FFB900, #F0D801);" styleClass="selecting_either_series_or_movie_button" text="series" textFill="#fae800">
+                                                        <JFXButton contentDisplay="RIGHT" graphicTextGap="10.0" onAction="#go_to_series" prefHeight="45.0" prefWidth="291.0" ripplerFill="#464646" style="-fx-background-radius: 2px; -fx-text-fill: linear-gradient(#FFB900, #F0D801);" styleClass="selecting_either_series_or_movie_button" text="series" textFill="#fae800">
                                                             <graphic>
                                                                 <MaterialDesignIconView glyphName="ARROW_RIGHT" size="20" style="-fx-fill: linear-gradient(#FFB900, #F0D801);" />
                                                             </graphic>

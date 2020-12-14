@@ -9,7 +9,7 @@
         <option name="htmlPlaceholderId" value="" />
         <option name="icons">
           <JavaFxApplicationIcons>
-            <option name="windowsIcon" value="$PROJECT_DIR$/_configuration/movieHubIcon.ico" />
+            <option name="windowsIcon" value="$PROJECT_DIR$/_configuration/nextGen_x4.ico" />
           </JavaFxApplicationIcons>
         </option>
         <option name="nativeBundle" value="all" />

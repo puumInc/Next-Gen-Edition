@@ -16,9 +16,9 @@
    <children>
       <AnchorPane prefHeight="200.0" prefWidth="200.0">
          <children>
-            <HBox layoutX="15.0" layoutY="12.0" spacing="5.0">
+            <HBox layoutX="15.0" layoutY="12.0" prefHeight="27.0" prefWidth="320.0" spacing="5.0">
                <children>
-                  <Label fx:id="taskNameLbl" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="27.0" prefWidth="225.0" styleClass="name" textFill="#323232" wrapText="true" />
+                  <Label fx:id="taskNameLbl" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="27.0" prefWidth="312.0" styleClass="name" textFill="#323232" wrapText="true" />
                   <JFXButton contentDisplay="GRAPHIC_ONLY" graphicTextGap="10.0" minHeight="-Infinity" minWidth="-Infinity" onAction="#show_task_files" prefHeight="27.0" prefWidth="27.0" ripplerFill="#a1961e" style="-fx-background-radius: 0px;" styleClass="activity_view_btn" text="View" textFill="WHITE">
                      <cursor>
                         <Cursor fx:constant="HAND" />
