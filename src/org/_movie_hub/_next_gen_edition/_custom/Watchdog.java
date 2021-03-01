@@ -84,7 +84,7 @@ public class Watchdog extends Assistant {
         try {
             final File file = new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE));
             if (file.exists()) {
-                final JsonArray jsonArray = get_app_details_as_object(file);
+                final JsonArray jsonArray = read_jsonArray_from_file(file);
                 jsonArray.add(new Gson().toJsonTree(history, History.class));
                 FileWriter fileWriter = new FileWriter(file);
                 fileWriter.write(new Gson().toJson(jsonArray));

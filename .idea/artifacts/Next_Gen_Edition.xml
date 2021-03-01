@@ -4,8 +4,8 @@
     <properties id="javafx-properties">
       <options>
         <option name="appClass" value="org._movie_hub._next_gen_edition.Main" />
+        <option name="convertCss2Bin" value="true" />
         <option name="description" value="Movie shop edition" />
-        <option name="enabledSigning" value="true" />
         <option name="htmlPlaceholderId" value="" />
         <option name="icons">
           <JavaFxApplicationIcons>

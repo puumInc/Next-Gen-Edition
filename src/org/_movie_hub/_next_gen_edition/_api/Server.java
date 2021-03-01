@@ -151,7 +151,7 @@ public class Server extends Watchdog {
                 if (listOfTrailerIds.get(category).containsKey(mediaId)) {
                     String path = null;
                     final String fileName = listOfTrailerIds.get(category).get(mediaId);
-                    final JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
+                    final JsonArray jsonArray = read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
                     outer:
                     for (JsonElement jsonElement : jsonArray) {
                         final String olderPath = jsonElement.getAsString();
@@ -199,7 +199,7 @@ public class Server extends Watchdog {
             response.type("application/json");
             response.status(HttpURLConnection.HTTP_OK);
             try {
-                final JsonArray jsonArray = get_trailer_list_with_readable_names(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
+                final JsonArray jsonArray = get_trailer_list_with_readable_names(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
                 if (jsonArray.size() == 0) {
                     return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, "No trailers are available!"));
                 } else {

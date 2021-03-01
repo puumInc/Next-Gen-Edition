@@ -441,7 +441,7 @@ public class Home extends Email implements Initializable {
         try {
             if (event.getSource().equals(trailerBtn)) {
                 if (verify_trailers()) {
-                    display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
+                    display_trailers(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
                     new RubberBand(((Node) event.getSource())).play();
                 }
             } else if (event.getSource().equals(forMovies)) {
@@ -652,7 +652,7 @@ public class Home extends Email implements Initializable {
             update_trailer_and_playlist_key();
             Platform.runLater(() -> {
                 try {
-                    display_trailers(get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
+                    display_trailers(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE))));
                 } catch (IOException ex) {
                     ex.printStackTrace();
                     new Thread(write_stack_trace(ex)).start();
@@ -718,7 +718,7 @@ public class Home extends Email implements Initializable {
                     try {
                         Platform.runLater(() -> {
                             try {
-                                display_all_history(create_history_list(get_app_details_as_object(new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE)))));
+                                display_all_history(create_history_list(read_jsonArray_from_file(new File(format_path_name_to_current_os(ACTIVITY_JSON_FILE)))));
                             } catch (IOException ex) {
                                 ex.printStackTrace();
                                 new Thread(write_stack_trace(ex)).start();
@@ -806,7 +806,7 @@ public class Home extends Email implements Initializable {
             }
             try {
                 JsonElement jsonElement = new Gson().toJsonTree(trailersFolder.getAbsolutePath(), String.class);
-                JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
+                JsonArray jsonArray = read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
                 for (JsonElement jsonElement1 : jsonArray) {
                     if (jsonElement1.equals(jsonElement)) {
                         error_message("Hmmh, duplicate found!", "Movie hub already has the path you have just selected").show();

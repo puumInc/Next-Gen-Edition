@@ -41,7 +41,7 @@ public class Trailer extends Watchdog implements Initializable {
     void delete_directory(ActionEvent event) {
         final JsonElement jsonElement = new Gson().toJsonTree(pathTF.getParent().getParent().getId(), String.class);
         try {
-            final JsonArray jsonArray = get_app_details_as_object(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
+            final JsonArray jsonArray = read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
             for (JsonElement jsonElement1 : jsonArray) {
                 if (jsonElement1.equals(jsonElement)) {
                     jsonArray.remove(jsonElement);

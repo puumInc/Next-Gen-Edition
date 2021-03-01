@@ -270,7 +270,7 @@ public abstract class Assistant {
         return result;
     }
 
-    protected JsonArray get_app_details_as_object(File file) throws IOException {
+    protected JsonArray read_jsonArray_from_file(File file) throws IOException {
         final BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
         final JsonArray jsonArray = new JsonArray();
         jsonArray.addAll(new Gson().fromJson(bufferedReader, JsonArray.class));
@@ -355,7 +355,7 @@ public abstract class Assistant {
     protected HashMap<String, HashMap<String, String>> make_map(String fileName) {
         final HashMap<String, HashMap<String, String>> stringHashMapHashMap = new HashMap<>();
         try {
-            final JsonArray jsonArray = get_app_details_as_object(new File(fileName));
+            final JsonArray jsonArray = read_jsonArray_from_file(new File(fileName));
             jsonArray.forEach(jsonElement -> {
                 final Category category = new Gson().fromJson(jsonElement, Category.class);
                 final HashMap<String, String> mediaNames = new HashMap<>();
