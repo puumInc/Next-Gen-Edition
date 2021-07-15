@@ -25,12 +25,10 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
+import java.net.*;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Mandela aka puumInc
@@ -56,6 +54,35 @@ public abstract class Assistant {
     protected static HashMap<String, HashMap<String, String>> listOfTrailerIds;
 
     protected static String taskRequested;
+
+    protected final InetAddress get_first_nonLoopback_address(boolean preferIpv4, boolean preferIPv6) throws SocketException, UnknownHostException {
+        InetAddress result = InetAddress.getLocalHost();
+        Enumeration<NetworkInterface> networkInterfaceEnumeration = NetworkInterface.getNetworkInterfaces();
+        while (networkInterfaceEnumeration.hasMoreElements()) {
+            NetworkInterface networkInterface = networkInterfaceEnumeration.nextElement();
+            for (Enumeration<InetAddress> inetAddressEnumeration = networkInterface.getInetAddresses(); inetAddressEnumeration.hasMoreElements(); ) {
+                InetAddress inetAddress = inetAddressEnumeration.nextElement();
+                if (!inetAddress.isLoopbackAddress()) {
+                    if (inetAddress instanceof Inet4Address) {
+                        if (preferIPv6) {
+                            continue;
+                        }
+                        result = inetAddress;
+                        break;
+                    }
+                    if (inetAddress instanceof Inet6Address) {
+                        if (preferIpv4) {
+                            continue;
+                        }
+                        result = inetAddress;
+                        break;
+                    }
+                }
+            }
+            if (result != null) break;
+        }
+        return result;
+    }
 
     protected String format_path_name_to_current_os(String myPath) {
         String myOperatingSystemSlash = get_slash_for_my_os();
@@ -428,8 +455,10 @@ public abstract class Assistant {
         if (file.exists()) {
             if (file.isDirectory()) {
                 final File[] files = file.listFiles();
-                for (File file1 : files) {
-                    stringList.addAll(get_list_of_file_names_from_the_given_file_type(file1));
+                if (files != null) {
+                    for (File file1 : files) {
+                        stringList.addAll(get_list_of_file_names_from_the_given_file_type(file1));
+                    }
                 }
             } else {
                 if (file.isFile()) {

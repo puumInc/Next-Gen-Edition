@@ -19,5 +19,6 @@
     <orderEntry type="library" exported="" name="SL4J" level="application" />
     <orderEntry type="library" exported="" name="spark-core 2.9.1 maven" level="application" />
     <orderEntry type="library" exported="" name="zxing from maven" level="application" />
+    <orderEntry type="library" name="j2html-1.4.0" level="application" />
   </component>
 </module>

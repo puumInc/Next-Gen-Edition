@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import javafx.application.Platform;
 import org._movie_hub._next_gen_edition._api._response_model.StandardResponse;
 import org._movie_hub._next_gen_edition._api._response_model.StatusResponse;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
@@ -14,10 +13,13 @@ import org._movie_hub._next_gen_edition._object.Media;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static j2html.TagCreator.*;
 import static spark.Spark.get;
 
 /**
@@ -42,6 +44,85 @@ public class Server extends Watchdog {
     }
 
     public void app_details() {
+        get(CONTEXT_PATH.concat("/web"), (((request, response) -> {
+            response.type("text/html");
+            List<Category> populatedCategories = get_populated_categories(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
+            return html().with(
+                    head()
+                            .with(
+                                    meta().withCharset("utf-8").withName("charset").withContent("width=device-width")
+                            ),
+                    body()
+                            .withStyle("background-color: #2a2a2a;")
+                            .with(
+                                    div().with(
+                                            join(
+                                                    h1("Movie Hub : ")
+                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800;  padding-left: 40%")
+                                                            .with(
+                                                                    small("Web Edition")
+                                                                            .withStyle("font-weight: 600; color: #FEFEFE;")
+                                                            )
+                                            )
+                                    ),
+                                    div().with(
+                                            video().attr("controls=\"controls\" autoplay=\"\"  width=\"1280\" height=\"500\"")
+                                                    .withName("media")
+                                                    .withId("videoElement")
+                                                    .with(
+                                                            source()
+                                                                    .withId("videoSource")
+                                                                    .withType("video/mp4")
+                                                    )
+                                    ),
+                                    div().withStyle("background-color: #2a2a2a;").with(
+                                            p("Media Name")
+                                                    .withId("mediaNameLbl")
+                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; font-size: 16px;"),
+                                            p("Media Category")
+                                                    .withId("mediaCategory")
+                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fefefe; font-size: 12px;")
+                                    ),
+                                    div()
+                                            .withStyle("padding-top: 50px;")
+                                            .with(
+                                                    join(
+                                                            label("Choose Video to Play : ")
+                                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-weight: 600; color:#fae800;")
+                                                                    .attr("for=\"select_element\""),
+                                                            select()
+                                                                    .withName("select_element")
+                                                                    .withId("select_element")
+                                                                    .withStyle("border-color: #fae800; background-color: #2a2a2a; font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-size: 14px; color: #FEFEFE; padding: 10px;")
+                                                                    .attr("onChange=\"show_video(event)\"")
+                                                                    .with(
+                                                                            each(populatedCategories, category ->
+                                                                                    optgroup().attr("label=\"" + category.getName() + "\"")
+                                                                                            .with(
+                                                                                                    each(get_media_from_category(category.getMedia()), media ->
+                                                                                                            join(
+                                                                                                                    option()
+                                                                                                                            .withValue("http://" + get_myAddress() + ":4567" + CONTEXT_PATH + "/watch/trailer/" + category.getName() + "/" + media.getKey())
+                                                                                                                            .withText(media.getValue())
+
+                                                                                                            ))
+                                                                                            ))
+                                                                    )
+                                                    )
+                                            )
+                            ),
+                    script(rawHtml("function show_video(evt) {" +
+                            "document.querySelector(\"#videoElement > source\").src = evt.target.value;" +
+                            "document.getElementById(\"videoElement\").load();" +
+                            "var cbx =  document.getElementById(\"select_element\");" +
+                            "var op = cbx.options[cbx.selectedIndex];" +
+                            "document.getElementById(\"mediaNameLbl\").innerHTML = op.text;" +
+                            "var optGroup = op.parentNode;" +
+                            "document.getElementById(\"mediaCategory\").innerHTML = optGroup.label;" +
+                            "}")).withType("text/javascript")
+            ).render();
+        })));
+
         get(CONTEXT_PATH.concat("/"), (((request, response) -> {
             response.type("application/json");
             final JsonObject jsonObject = get_app_details_as_object();
@@ -68,7 +149,6 @@ public class Server extends Watchdog {
             } catch (Exception exception) {
                 exception.printStackTrace();
                 new Thread(write_stack_trace(exception)).start();
-                Platform.runLater(() -> programmer_error(exception).show());
                 return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
             }
         }));
@@ -86,7 +166,6 @@ public class Server extends Watchdog {
             } catch (Exception exception) {
                 exception.printStackTrace();
                 new Thread(write_stack_trace(exception)).start();
-                Platform.runLater(() -> programmer_error(exception).show());
                 return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
             }
         }));
@@ -127,14 +206,14 @@ public class Server extends Watchdog {
                     }
                     dataInputStream.close();
                     dataOutputStream.close();
-                    return new Gson().toJson(new StandardResponse(StatusResponse.SUCCESS));
+                    return HttpURLConnection.HTTP_OK;
                 } else {
+                    response.type("application/json");
                     return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, "The file you have requested does not exist!"));
                 }
             } catch (Exception exception) {
                 exception.printStackTrace();
                 new Thread(write_stack_trace(exception)).start();
-                Platform.runLater(() -> programmer_error(exception).show());
                 response.type("application/json");
                 return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
             }
@@ -148,46 +227,50 @@ public class Server extends Watchdog {
             final String mediaId = request.params(":mediaId");
             response.status(HttpURLConnection.HTTP_OK);
             try {
-                if (listOfTrailerIds.get(category).containsKey(mediaId)) {
-                    String path = null;
-                    final String fileName = listOfTrailerIds.get(category).get(mediaId);
-                    final JsonArray jsonArray = read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
-                    outer:
-                    for (JsonElement jsonElement : jsonArray) {
-                        final String olderPath = jsonElement.getAsString();
-                        final JsonArray jsonArray1 = get_directory_of_sub_files_in_the_provided_folder(new File(olderPath));
-                        for (JsonElement jsonElement1 : jsonArray1) {
-                            final String filePath = jsonElement1.getAsString();
-                            if (filePath.endsWith(fileName)) {
-                                path = filePath;
-                                break outer;
+                if (listOfTrailerIds.get(category) != null) {
+                    if (listOfTrailerIds.get(category).containsKey(mediaId)) {
+                        String path = null;
+                        final String fileName = listOfTrailerIds.get(category).get(mediaId);
+                        final JsonArray jsonArray = read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILERS_JSON_FILE)));
+                        outer:
+                        for (JsonElement jsonElement : jsonArray) {
+                            final String olderPath = jsonElement.getAsString();
+                            final JsonArray jsonArray1 = get_directory_of_sub_files_in_the_provided_folder(new File(olderPath));
+                            for (JsonElement jsonElement1 : jsonArray1) {
+                                final String filePath = jsonElement1.getAsString();
+                                if (filePath.endsWith(fileName)) {
+                                    path = filePath;
+                                    break outer;
+                                }
                             }
                         }
-                    }
-                    if (path == null) {
-                        response.type("application/json");
-                        return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, fileName.concat(" does not exist!")));
-                    }
-                    File file = new File(path);
-                    if (file.exists()) {
-                        response.raw().setContentLengthLong(file.length());
-                        DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(response.raw().getOutputStream()));
-                        DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
-                        int count;
-                        byte[] buffer = new byte[8192];
-                        while ((count = dataInputStream.read(buffer)) > 0) {
-                            dataOutputStream.write(buffer, 0, count);
+                        if (path == null) {
+                            response.type("application/json");
+                            return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, fileName.concat(" does not exist!")));
                         }
-                        dataInputStream.close();
-                        dataOutputStream.close();
-                        return HttpURLConnection.HTTP_OK;
+                        File file = new File(path);
+                        if (file.exists()) {
+                            response.raw().setContentLengthLong(file.length());
+                            DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(response.raw().getOutputStream()));
+                            DataInputStream dataInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+                            int count;
+                            byte[] buffer = new byte[8192];
+                            while ((count = dataInputStream.read(buffer)) > 0) {
+                                dataOutputStream.write(buffer, 0, count);
+                            }
+                            dataInputStream.close();
+                            dataOutputStream.close();
+                            return HttpURLConnection.HTTP_OK;
+                        }
+                    } else {
+                        response.type("application/json");
+                        return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, "Bad the key provided!"));
                     }
                 }
                 return HttpURLConnection.HTTP_NO_CONTENT;
             } catch (Exception exception) {
                 exception.printStackTrace();
                 new Thread(write_stack_trace(exception)).start();
-                Platform.runLater(() -> programmer_error(exception).show());
                 response.type("application/json");
                 return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
             }
@@ -208,7 +291,6 @@ public class Server extends Watchdog {
             } catch (IOException exception) {
                 exception.printStackTrace();
                 new Thread(write_stack_trace(exception)).start();
-                Platform.runLater(() -> programmer_error(exception).show());
                 return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
             }
         }));
@@ -230,6 +312,28 @@ public class Server extends Watchdog {
         return jsonArray;
     }
 
+    private List<Media> get_media_from_category(JsonArray jsonElements) {
+        final List<Media> mediaList = new ArrayList<>();
+        jsonElements.forEach(jsonElement -> mediaList.add(new Gson().fromJson(jsonElement, Media.class)));
+        return mediaList;
+    }
+
+    private List<Category> get_populated_categories(JsonArray trailerList) {
+        final List<Category> categoryList = new ArrayList<>();
+        trailerList.forEach(jsonElement -> {
+            Category category = new Gson().fromJson(jsonElement, Category.class);
+            JsonArray jsonElements = new JsonArray();
+            category.getMedia().forEach(jsonElement1 -> {
+                Media media = new Gson().fromJson(jsonElement1, Media.class);
+                media.setValue(format_file_name(media.getValue()));
+                jsonElements.add(new Gson().toJsonTree(media, Media.class));
+            });
+            category.setMedia(jsonElements);
+            categoryList.add(category);
+        });
+        return categoryList;
+    }
+
     private JsonArray get_list_of_pending_uploads() {
         final JsonArray jsonArray = new JsonArray();
         Set<String> stringSet = STRING_JOB_PACKAGE_HASH_MAP_FOR_UPLOAD.keySet();
@@ -239,6 +343,15 @@ public class Server extends Watchdog {
             }
         });
         return jsonArray;
+    }
+
+    private String get_myAddress() {
+        try {
+            return get_first_nonLoopback_address(true, false).getHostAddress();
+        } catch (SocketException | UnknownHostException e) {
+            e.printStackTrace();
+        }
+        return "localhost";
     }
 
 }

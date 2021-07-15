@@ -14,9 +14,13 @@ import java.io.File;
 public class Main extends Application {
 
     public static File RESOURCE_PATH = new File(System.getenv("JAVAFX_DEV_APP_HOME").concat("\\_movie_hub\\_next_gen_edition"));
-    private double xOffset, yOffset;
     public static Stage stage;
     public static Process process;
+    private double xOffset, yOffset;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 
     @Override
     public void start(@NotNull Stage primaryStage) throws Exception {
@@ -30,11 +34,7 @@ public class Main extends Application {
             primaryStage.setX(event1.getScreenX() - xOffset);
             primaryStage.setY(event1.getScreenY() - yOffset);
         });
-        primaryStage.getIcons().addAll(
-                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x1.png").toExternalForm()),
-                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x2.png").toExternalForm()),
-                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x3.png").toExternalForm()),
-                new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x4.png").toExternalForm()));
+        primaryStage.getIcons().add(new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x1.png").toExternalForm()));
         primaryStage.setScene(scene);
         primaryStage.centerOnScreen();
         primaryStage.initStyle(StageStyle.DECORATED);
@@ -47,9 +47,5 @@ public class Main extends Application {
             System.exit(0);
         });
         Main.stage = primaryStage;
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
