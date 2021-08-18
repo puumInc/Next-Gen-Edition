@@ -13,8 +13,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import org._movie_hub._next_gen_edition._api.Server;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
-import org._movie_hub._next_gen_edition._object.History;
-import org._movie_hub._next_gen_edition._object.JobPackage;
+import org._movie_hub._next_gen_edition._model._object.History;
+import org._movie_hub._next_gen_edition._model._object.JobPackage;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -349,9 +349,9 @@ public class MyTasks extends Watchdog implements Initializable {
                             updateProgress(megabytes, TOTAL_SIZE_IN_MB);
                             final double currentBytes = bytes;
                             Platform.runLater(() -> sizeDifferenceLbl.setText(
-                                    "Uploaded "
-                                            .concat(make_bytes_more_presentable(currentBytes)).concat(" of ")
-                                            .concat(make_bytes_more_presentable(jobSizeAsBytes))
+                                            "Uploaded "
+                                                    .concat(make_bytes_more_presentable(currentBytes)).concat(" of ")
+                                                    .concat(make_bytes_more_presentable(jobSizeAsBytes))
                                     )
                             );
                         }
@@ -401,8 +401,10 @@ public class MyTasks extends Watchdog implements Initializable {
                     try {
                         if (source.isFile()) {
                             if (can_be_used_by_vlc(source)) {
-                                FileUtils.copyFileToDirectory(source, destinationPath);
-                                objectList.add(source.getAbsolutePath());
+                                if (source.canRead()) {
+                                    FileUtils.copyFileToDirectory(source, destinationPath, true);
+                                    objectList.add(source.getAbsolutePath());
+                                }
                             }
                         } else {
                             if (source.isDirectory()) {
@@ -412,8 +414,10 @@ public class MyTasks extends Watchdog implements Initializable {
                                     FileUtils.forceMkdir(newDestination);
                                     for (File file : files) {
                                         if (can_be_used_by_vlc(file)) {
-                                            FileUtils.copyFileToDirectory(file, newDestination);
-                                            objectList.add(file.getAbsolutePath());
+                                            if (file.canRead()) {
+                                                FileUtils.copyFileToDirectory(file, newDestination, true);
+                                                objectList.add(file.getAbsolutePath());
+                                            }
                                         }
                                     }
                                 }

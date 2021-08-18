@@ -5,7 +5,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
-import org._movie_hub._next_gen_edition._object.History;
+import org._movie_hub._next_gen_edition._model._object.History;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 

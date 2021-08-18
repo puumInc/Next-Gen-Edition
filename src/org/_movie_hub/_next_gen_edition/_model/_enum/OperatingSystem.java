@@ -1,4 +1,4 @@
-package org._movie_hub._next_gen_edition._enum;
+package org._movie_hub._next_gen_edition._model._enum;
 
 public enum OperatingSystem {
     WINDOWS("win", "\\"),

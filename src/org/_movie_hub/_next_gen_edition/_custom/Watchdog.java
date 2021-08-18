@@ -14,7 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org._movie_hub._next_gen_edition.Main;
-import org._movie_hub._next_gen_edition._object.History;
+import org._movie_hub._next_gen_edition._model._object.History;
 import org.controlsfx.control.Notifications;
 import org.jetbrains.annotations.Contract;
 
@@ -109,7 +109,7 @@ public class Watchdog extends Assistant {
             BufferedWriter bw = null;
             try {
                 final String PATH_TO_ERROR_FOLDER = Main.RESOURCE_PATH.getAbsolutePath() + "\\_watchDog\\_error\\";
-                File log = new File(PATH_TO_ERROR_FOLDER.concat(gate_date_for_file_name().concat(" stackTrace_log.txt")));
+                File log = new File(format_path_name_to_current_os(PATH_TO_ERROR_FOLDER.concat(gate_date_for_file_name().concat(" stackTrace_log.txt"))));
                 if (!log.exists()) {
                     FileWriter fw = new FileWriter(log);
                     fw.write("\nThis is a newly created file [ " + time_stamp() + " ].");
@@ -193,7 +193,7 @@ public class Watchdog extends Assistant {
     protected final void information_message(String message) {
         try {
             SystemTray systemTray = SystemTray.getSystemTray();
-            java.awt.image.BufferedImage bufferedImage = ImageIO.read(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x1.png"));
+            java.awt.image.BufferedImage bufferedImage = ImageIO.read(getClass().getResource("/_images/myIco_x1.png"));
             TrayIcon trayIcon = new TrayIcon(bufferedImage);
             trayIcon.setImageAutoSize(true);
             systemTray.add(trayIcon);
@@ -210,11 +210,11 @@ public class Watchdog extends Assistant {
                 .text(about)
                 .position(Pos.TOP_LEFT)
                 .hideAfter(Duration.seconds(5))
-                .graphic(new ImageView(new Image("/org/_movie_hub/_next_gen_edition/_images/icons8_Ok_48px.png")));
+                .graphic(new ImageView(new Image("/_images/icons8_Ok_48px.png")));
     }
 
     protected final Notifications error_message(String title, String text) {
-        Image image = new Image("/org/_movie_hub/_next_gen_edition/_images/icons8_Close_Window_48px.png");
+        Image image = new Image("/_images/icons8_Close_Window_48px.png");
         return Notifications.create()
                 .title(title)
                 .text(text)
@@ -224,7 +224,7 @@ public class Watchdog extends Assistant {
     }
 
     protected final Notifications warning_message(String title, String text) {
-        Image image = new Image("/org/_movie_hub/_next_gen_edition/_images/icons8_Error_48px.png");
+        Image image = new Image("/_images/icons8_Error_48px.png");
         return Notifications.create()
                 .title(title)
                 .text(text)
@@ -234,7 +234,7 @@ public class Watchdog extends Assistant {
     }
 
     protected final Notifications empty_and_null_pointer_message(Node node) {
-        Image image = new Image("/org/_movie_hub/_next_gen_edition/_images/icons8_Error_48px.png");
+        Image image = new Image("/_images/icons8_Error_48px.png");
         return Notifications.create()
                 .title("Something is Missing")
                 .text("Click Here to trace this Error.")

@@ -4,12 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import j2html.tags.ContainerTag;
 import org._movie_hub._next_gen_edition._api._response_model.StandardResponse;
 import org._movie_hub._next_gen_edition._api._response_model.StatusResponse;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
-import org._movie_hub._next_gen_edition._object.Category;
-import org._movie_hub._next_gen_edition._object.JobPackage;
-import org._movie_hub._next_gen_edition._object.Media;
+import org._movie_hub._next_gen_edition._model._object.Category;
+import org._movie_hub._next_gen_edition._model._object.JobPackage;
+import org._movie_hub._next_gen_edition._model._object.Media;
+import spark.Spark;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import static j2html.TagCreator.*;
-import static spark.Spark.get;
+import static spark.Spark.*;
 
 /**
  * @author Mandela aka puumInc
@@ -37,6 +39,7 @@ public class Server extends Watchdog {
     private final String CONTEXT_PATH = "/movieHub/api";
 
     public Server() {
+        Spark.staticFileLocation("public");
         app_details();
         download();
         provide_list();
@@ -46,19 +49,21 @@ public class Server extends Watchdog {
     public void app_details() {
         get(CONTEXT_PATH.concat("/web"), (((request, response) -> {
             response.type("text/html");
-            List<Category> populatedCategories = get_populated_categories(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
+            List<Category> categoryList = get_populated_categories(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
             return html().with(
                     head()
                             .with(
-                                    meta().withCharset("utf-8").withName("charset").withContent("width=device-width")
+                                    meta().withCharset("utf-8").withName("viewport").withContent("width=device-width,initial-scale=1.0"),
+                                    link().withRel("shortcut icon").withType("image/x-icon").withHref(String.format("http://%s:4567/nextGen_x4.ico", get_myAddress())),
+                                    title("Movie Hub Web")
                             ),
                     body()
                             .withStyle("background-color: #2a2a2a;")
                             .with(
                                     div().with(
                                             join(
-                                                    h1("Movie Hub : ")
-                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800;  padding-left: 40%")
+                                                    h1("Movie Hub's ")
+                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; text-align:center;")
                                                             .with(
                                                                     small("Web Edition")
                                                                             .withStyle("font-weight: 600; color: #FEFEFE;")
@@ -66,7 +71,7 @@ public class Server extends Watchdog {
                                             )
                                     ),
                                     div().with(
-                                            video().attr("controls=\"controls\" autoplay=\"\"  width=\"1280\" height=\"500\"")
+                                            video().attr("controls=\"controls\" autoplay=\"\"  width=\"100%\" height=\"500\"")
                                                     .withName("media")
                                                     .withId("videoElement")
                                                     .with(
@@ -84,43 +89,53 @@ public class Server extends Watchdog {
                                                     .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fefefe; font-size: 12px;")
                                     ),
                                     div()
-                                            .withStyle("padding-top: 50px;")
+                                            .withStyle("padding-top: 25px; padding-bottom: 25px;")
                                             .with(
                                                     join(
-                                                            label("Choose Video to Play : ")
-                                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-weight: 600; color:#fae800;")
+                                                            label("Choose video from the options below")
+                                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-weight: 600; color:#fae800; font-style:italic;")
                                                                     .attr("for=\"select_element\""),
                                                             select()
                                                                     .withName("select_element")
                                                                     .withId("select_element")
-                                                                    .withStyle("border-color: #fae800; background-color: #2a2a2a; font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-size: 14px; color: #FEFEFE; padding: 10px;")
+                                                                    .withStyle("border-color: #fae800; background-color: #2a2a2a; font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-size: 14px; color: #FEFEFE; padding: 10px; width: 100%; margin-top: 12.5px;")
                                                                     .attr("onChange=\"show_video(event)\"")
                                                                     .with(
-                                                                            each(populatedCategories, category ->
-                                                                                    optgroup().attr("label=\"" + category.getName() + "\"")
-                                                                                            .with(
-                                                                                                    each(get_media_from_category(category.getMedia()), media ->
-                                                                                                            join(
-                                                                                                                    option()
-                                                                                                                            .withValue("http://" + get_myAddress() + ":4567" + CONTEXT_PATH + "/watch/trailer/" + category.getName() + "/" + media.getKey())
-                                                                                                                            .withText(media.getValue())
-
-                                                                                                            ))
-                                                                                            ))
+                                                                            categoryList.stream().map(category -> optgroup()
+                                                                                    .attr("label=\"" + category.getName() + "\"")
+                                                                                    .with(
+                                                                                            get_media_from_category(category.getMedia()).stream().map(media -> option()
+                                                                                                    .withValue(String.format("http://%s:4567%s/watch/trailer/%s/%s", get_myAddress(), CONTEXT_PATH, category.getName(), media.getKey()))
+                                                                                                    .withText(media.getValue())
+                                                                                            ).toArray(ContainerTag[]::new)
+                                                                                    )
+                                                                            ).toArray(ContainerTag[]::new)
                                                                     )
                                                     )
-                                            )
-                            ),
-                    script(rawHtml("function show_video(evt) {" +
-                            "document.querySelector(\"#videoElement > source\").src = evt.target.value;" +
-                            "document.getElementById(\"videoElement\").load();" +
-                            "var cbx =  document.getElementById(\"select_element\");" +
-                            "var op = cbx.options[cbx.selectedIndex];" +
-                            "document.getElementById(\"mediaNameLbl\").innerHTML = op.text;" +
-                            "var optGroup = op.parentNode;" +
-                            "document.getElementById(\"mediaCategory\").innerHTML = optGroup.label;" +
-                            "}")).withType("text/javascript")
-            ).render();
+                                            ),
+                                    script(rawHtml("var index;\n" +
+                                            "\tfunction show_video(evt) {\n" +
+                                            "\t\tdocument.querySelector(\"#videoElement > source\").src = evt.target.value;\n" +
+                                            "\t\tdocument.getElementById(\"videoElement\").load();\n" +
+                                            "\t\tvar cbx =  document.getElementById(\"select_element\");\n" +
+                                            "\t\tindex = cbx.selectedIndex;\n" +
+                                            "\t\tvar op = cbx.options[index];\n" +
+                                            "\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = op.text;\n" +
+                                            "\t\tvar optGroup = op.parentNode;\n" +
+                                            "\t\tdocument.getElementById(\"mediaCategory\").innerHTML = optGroup.label;\n" +
+                                            "\t\t\n" +
+                                            "\t\tdocument.getElementById(\"videoElement\").onended = function () {\n" +
+                                            "\t\t\tindex = (index + 1);\n" +
+                                            "\t\t\tvar next_op = cbx.options[index];\n" +
+                                            "\t\t\tdocument.querySelector(\"#videoElement > source\").src = next_op.value;\n" +
+                                            "\t\t    document.getElementById(\"videoElement\").load();\n" +
+                                            "\t\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = next_op.text;\n" +
+                                            "\t\t\tvar next_optGroup = next_op.parentNode;\n" +
+                                            "\t\t\tdocument.getElementById(\"mediaCategory\").innerHTML = next_optGroup.label;\n" +
+                                            "\t\t\tdocument.getElementById(\"select_element\").options[index].selectedIndex = true;\n" +
+                                            "\t\t};\t\n" +
+                                            "\t}")).withType("text/javascript")
+                            )).render();
         })));
 
         get(CONTEXT_PATH.concat("/"), (((request, response) -> {
@@ -227,7 +242,9 @@ public class Server extends Watchdog {
             final String mediaId = request.params(":mediaId");
             response.status(HttpURLConnection.HTTP_OK);
             try {
-                if (listOfTrailerIds.get(category) != null) {
+                if (listOfTrailerIds == null) {
+                    return HttpURLConnection.HTTP_NO_CONTENT;
+                } else if (listOfTrailerIds.get(category) != null) {
                     if (listOfTrailerIds.get(category).containsKey(mediaId)) {
                         String path = null;
                         final String fileName = listOfTrailerIds.get(category).get(mediaId);
@@ -281,17 +298,11 @@ public class Server extends Watchdog {
         get(CONTEXT_PATH.concat("/trailer"), ((request, response) -> {
             response.type("application/json");
             response.status(HttpURLConnection.HTTP_OK);
-            try {
-                final JsonArray jsonArray = get_trailer_list_with_readable_names(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
-                if (jsonArray.size() == 0) {
-                    return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, "No trailers are available!"));
-                } else {
-                    return new Gson().toJson(new StandardResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(jsonArray, JsonArray.class)));
-                }
-            } catch (IOException exception) {
-                exception.printStackTrace();
-                new Thread(write_stack_trace(exception)).start();
-                return new Gson().toJson(new StandardResponse(StatusResponse.ERROR, exception.toString()));
+            final JsonArray jsonArray = get_trailer_list_with_readable_names(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
+            if (jsonArray.size() == 0) {
+                return new Gson().toJson(new StandardResponse(StatusResponse.WARNING, "No trailers are available!"));
+            } else {
+                return new Gson().toJson(new StandardResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(jsonArray, JsonArray.class)));
             }
         }));
     }
@@ -314,7 +325,10 @@ public class Server extends Watchdog {
 
     private List<Media> get_media_from_category(JsonArray jsonElements) {
         final List<Media> mediaList = new ArrayList<>();
-        jsonElements.forEach(jsonElement -> mediaList.add(new Gson().fromJson(jsonElement, Media.class)));
+        Gson gson = new Gson();
+        for (JsonElement jsonElement : jsonElements) {
+            mediaList.add(gson.fromJson(jsonElement, Media.class));
+        }
         return mediaList;
     }
 

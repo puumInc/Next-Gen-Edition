@@ -10,6 +10,7 @@ import javafx.stage.StageStyle;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.Objects;
 
 public class Main extends Application {
 
@@ -24,7 +25,7 @@ public class Main extends Application {
 
     @Override
     public void start(@NotNull Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/splashScreenPlatform.fxml"));
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/_fxml/splashScreenPlatform.fxml")));
         Scene scene = new Scene(root);
         scene.setOnMousePressed(event2 -> {
             xOffset = event2.getSceneX();
@@ -34,7 +35,7 @@ public class Main extends Application {
             primaryStage.setX(event1.getScreenX() - xOffset);
             primaryStage.setY(event1.getScreenY() - yOffset);
         });
-        primaryStage.getIcons().add(new Image(getClass().getResource("/org/_movie_hub/_next_gen_edition/_images/myIco_x1.png").toExternalForm()));
+        primaryStage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResource("/_images/myIco_x1.png")).toExternalForm()));
         primaryStage.setScene(scene);
         primaryStage.centerOnScreen();
         primaryStage.initStyle(StageStyle.DECORATED);

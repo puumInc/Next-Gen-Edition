@@ -1,4 +1,4 @@
-package org._movie_hub._next_gen_edition._object;
+package org._movie_hub._next_gen_edition._model._object;
 
 import javafx.collections.ObservableList;
 

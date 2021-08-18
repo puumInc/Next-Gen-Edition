@@ -14,12 +14,14 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 import javafx.util.Duration;
 import org._movie_hub._next_gen_edition.Main;
-import org._movie_hub._next_gen_edition._custom.Watchdog;
 import org._movie_hub._next_gen_edition._api.Server;
+import org._movie_hub._next_gen_edition._custom.Watchdog;
+import org._movie_hub._next_gen_edition._model._enum.OperatingSystem;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -90,7 +92,7 @@ public class SplashScreen extends Watchdog implements Initializable {
                     });
                 }
                 try {
-                    Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/homeUI.fxml"));
+                    Node node = FXMLLoader.load(getClass().getResource("/_fxml/homeUI.fxml"));
                     Platform.runLater(() -> movieSelectionPane.getChildren().add(node));
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -107,7 +109,7 @@ public class SplashScreen extends Watchdog implements Initializable {
         return () -> {
             try {
                 ProcessBuilder processBuilder = new ProcessBuilder();
-                processBuilder.command(Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Address\\").concat("Address.exe"));
+                processBuilder.command(format_path_name_to_current_os(get_slash_for_my_os().equals(OperatingSystem.WINDOWS.getOs()) ? Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Address\\").concat("Address.exe") : ((new File("/opt/Address/Address")).exists() ? "/opt/Address/Address" : "")));
                 processBuilder.redirectErrorStream(true);
                 Main.process = processBuilder.start();
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(Main.process.getInputStream()));

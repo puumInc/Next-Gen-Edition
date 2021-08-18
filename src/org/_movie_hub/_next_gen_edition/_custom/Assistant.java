@@ -17,10 +17,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import org._movie_hub._next_gen_edition.Main;
-import org._movie_hub._next_gen_edition._enum.OperatingSystem;
-import org._movie_hub._next_gen_edition._object.Category;
-import org._movie_hub._next_gen_edition._object.JobPackage;
-import org._movie_hub._next_gen_edition._object.Media;
+import org._movie_hub._next_gen_edition._model._enum.OperatingSystem;
+import org._movie_hub._next_gen_edition._model._object.Category;
+import org._movie_hub._next_gen_edition._model._object.JobPackage;
+import org._movie_hub._next_gen_edition._model._object.Media;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -94,7 +94,7 @@ public abstract class Assistant {
         return myPath;
     }
 
-    private String get_slash_for_my_os() {
+    protected String get_slash_for_my_os() {
         String OS = System.getProperty("os.name").toLowerCase();
         OperatingSystem myOperatingSystem = Arrays.stream(OperatingSystem.values()).filter(operatingSystem -> OS.contains(operatingSystem.getOs())).findFirst().orElse(null);
         if (myOperatingSystem == null) {
@@ -297,11 +297,16 @@ public abstract class Assistant {
         return result;
     }
 
-    protected JsonArray read_jsonArray_from_file(File file) throws IOException {
-        final BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+    protected JsonArray read_jsonArray_from_file(File file) {
         final JsonArray jsonArray = new JsonArray();
-        jsonArray.addAll(new Gson().fromJson(bufferedReader, JsonArray.class));
-        bufferedReader.close();
+        try {
+            final BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            jsonArray.addAll(new Gson().fromJson(bufferedReader, JsonArray.class));
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            new Thread(new Watchdog().write_stack_trace(e)).start();
+        }
         return jsonArray;
     }
 
@@ -381,22 +386,16 @@ public abstract class Assistant {
 
     protected HashMap<String, HashMap<String, String>> make_map(String fileName) {
         final HashMap<String, HashMap<String, String>> stringHashMapHashMap = new HashMap<>();
-        try {
-            final JsonArray jsonArray = read_jsonArray_from_file(new File(fileName));
-            jsonArray.forEach(jsonElement -> {
-                final Category category = new Gson().fromJson(jsonElement, Category.class);
-                final HashMap<String, String> mediaNames = new HashMap<>();
-                category.getMedia().forEach(jsonElement1 -> {
-                    final Media media = new Gson().fromJson(jsonElement1, Media.class);
-                    mediaNames.put(media.getKey(), media.getValue());
-                });
-                stringHashMapHashMap.put(category.getName(), mediaNames);
+        final JsonArray jsonArray = read_jsonArray_from_file(new File(fileName));
+        jsonArray.forEach(jsonElement -> {
+            final Category category = new Gson().fromJson(jsonElement, Category.class);
+            final HashMap<String, String> mediaNames = new HashMap<>();
+            category.getMedia().forEach(jsonElement1 -> {
+                final Media media = new Gson().fromJson(jsonElement1, Media.class);
+                mediaNames.put(media.getKey(), media.getValue());
             });
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            new Thread(new Watchdog().write_stack_trace(ex)).start();
-            Platform.runLater(() -> new Watchdog().programmer_error(ex).show());
-        }
+            stringHashMapHashMap.put(category.getName(), mediaNames);
+        });
         return stringHashMapHashMap;
     }
 

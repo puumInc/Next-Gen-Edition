@@ -11,7 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import org._movie_hub._next_gen_edition._custom.Watchdog;
-import org._movie_hub._next_gen_edition._object.History;
+import org._movie_hub._next_gen_edition._model._object.History;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,7 +43,7 @@ public class MyHistory extends Watchdog implements Initializable {
             final History history = new Gson().fromJson(jsonElement, History.class);
             try {
                 MyActivity.history = history;
-                Node node = FXMLLoader.load(getClass().getResource("/org/_movie_hub/_next_gen_edition/_fxml/activityUI.fxml"));
+                Node node = FXMLLoader.load(getClass().getResource("/_fxml/activityUI.fxml"));
                 Platform.runLater(() -> activitiesBox.getChildren().add(node));
                 MyActivity.history = null;
             } catch (IOException e) {
