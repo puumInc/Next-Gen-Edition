@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import static j2html.TagCreator.*;
-import static spark.Spark.*;
+import static spark.Spark.get;
 
 /**
  * @author Mandela aka puumInc
@@ -50,92 +50,93 @@ public class Server extends Watchdog {
         get(CONTEXT_PATH.concat("/web"), (((request, response) -> {
             response.type("text/html");
             List<Category> categoryList = get_populated_categories(read_jsonArray_from_file(new File(format_path_name_to_current_os(TRAILER_KEY_JSON_FILE))));
-            return html().with(
-                    head()
-                            .with(
-                                    meta().withCharset("utf-8").withName("viewport").withContent("width=device-width,initial-scale=1.0"),
-                                    link().withRel("shortcut icon").withType("image/x-icon").withHref(String.format("http://%s:4567/nextGen_x4.ico", get_myAddress())),
-                                    title("Movie Hub Web")
-                            ),
-                    body()
-                            .withStyle("background-color: #2a2a2a;")
-                            .with(
-                                    div().with(
-                                            join(
-                                                    h1("Movie Hub's ")
-                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; text-align:center;")
-                                                            .with(
-                                                                    small("Web Edition")
-                                                                            .withStyle("font-weight: 600; color: #FEFEFE;")
-                                                            )
-                                            )
+            return html()
+                    .with(
+                            head()
+                                    .with(
+                                            meta().withCharset("utf-8").withName("viewport").withContent("width=device-width,initial-scale=1.0"),
+                                            link().withRel("shortcut icon").withType("image/x-icon").withHref(String.format("http://%s:4567/nextGen_x4.ico", get_myAddress())),
+                                            title("Movie Hub Web")
                                     ),
-                                    div().with(
-                                            video().attr("controls=\"controls\" autoplay=\"\"  width=\"100%\" height=\"500\"")
-                                                    .withName("media")
-                                                    .withId("videoElement")
-                                                    .with(
-                                                            source()
-                                                                    .withId("videoSource")
-                                                                    .withType("video/mp4")
-                                                    )
-                                    ),
-                                    div().withStyle("background-color: #2a2a2a;").with(
-                                            p("Media Name")
-                                                    .withId("mediaNameLbl")
-                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; font-size: 16px;"),
-                                            p("Media Category")
-                                                    .withId("mediaCategory")
-                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fefefe; font-size: 12px;")
-                                    ),
-                                    div()
-                                            .withStyle("padding-top: 25px; padding-bottom: 25px;")
-                                            .with(
+                            body()
+                                    .withStyle("background-color: #2a2a2a;")
+                                    .with(
+                                            div().with(
                                                     join(
-                                                            label("Choose video from the options below")
-                                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-weight: 600; color:#fae800; font-style:italic;")
-                                                                    .attr("for=\"select_element\""),
-                                                            select()
-                                                                    .withName("select_element")
-                                                                    .withId("select_element")
-                                                                    .withStyle("border-color: #fae800; background-color: #2a2a2a; font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-size: 14px; color: #FEFEFE; padding: 10px; width: 100%; margin-top: 12.5px;")
-                                                                    .attr("onChange=\"show_video(event)\"")
+                                                            h1("Movie Hub's ")
+                                                                    .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; text-align:center;")
                                                                     .with(
-                                                                            categoryList.stream().map(category -> optgroup()
-                                                                                    .attr("label=\"" + category.getName() + "\"")
-                                                                                    .with(
-                                                                                            get_media_from_category(category.getMedia()).stream().map(media -> option()
-                                                                                                    .withValue(String.format("http://%s:4567%s/watch/trailer/%s/%s", get_myAddress(), CONTEXT_PATH, category.getName(), media.getKey()))
-                                                                                                    .withText(media.getValue())
-                                                                                            ).toArray(ContainerTag[]::new)
-                                                                                    )
-                                                                            ).toArray(ContainerTag[]::new)
+                                                                            small("Web Edition")
+                                                                                    .withStyle("font-weight: 600; color: #FEFEFE;")
                                                                     )
                                                     )
                                             ),
-                                    script(rawHtml("var index;\n" +
-                                            "\tfunction show_video(evt) {\n" +
-                                            "\t\tdocument.querySelector(\"#videoElement > source\").src = evt.target.value;\n" +
-                                            "\t\tdocument.getElementById(\"videoElement\").load();\n" +
-                                            "\t\tvar cbx =  document.getElementById(\"select_element\");\n" +
-                                            "\t\tindex = cbx.selectedIndex;\n" +
-                                            "\t\tvar op = cbx.options[index];\n" +
-                                            "\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = op.text;\n" +
-                                            "\t\tvar optGroup = op.parentNode;\n" +
-                                            "\t\tdocument.getElementById(\"mediaCategory\").innerHTML = optGroup.label;\n" +
-                                            "\t\t\n" +
-                                            "\t\tdocument.getElementById(\"videoElement\").onended = function () {\n" +
-                                            "\t\t\tindex = (index + 1);\n" +
-                                            "\t\t\tvar next_op = cbx.options[index];\n" +
-                                            "\t\t\tdocument.querySelector(\"#videoElement > source\").src = next_op.value;\n" +
-                                            "\t\t    document.getElementById(\"videoElement\").load();\n" +
-                                            "\t\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = next_op.text;\n" +
-                                            "\t\t\tvar next_optGroup = next_op.parentNode;\n" +
-                                            "\t\t\tdocument.getElementById(\"mediaCategory\").innerHTML = next_optGroup.label;\n" +
-                                            "\t\t\tdocument.getElementById(\"select_element\").options[index].selectedIndex = true;\n" +
-                                            "\t\t};\t\n" +
-                                            "\t}")).withType("text/javascript")
-                            )).render();
+                                            div().with(
+                                                    video().attr("controls=\"controls\" autoplay=\"\"  width=\"100%\" height=\"500\"")
+                                                            .withName("media")
+                                                            .withId("videoElement")
+                                                            .with(
+                                                                    source()
+                                                                            .withId("videoSource")
+                                                                            .withType("video/mp4")
+                                                            )
+                                            ),
+                                            div().withStyle("background-color: #2a2a2a;").with(
+                                                    p("Media Name")
+                                                            .withId("mediaNameLbl")
+                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fae800; font-size: 16px;"),
+                                                    p("Media Category")
+                                                            .withId("mediaCategory")
+                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; color:#fefefe; font-size: 12px;")
+                                            ),
+                                            div()
+                                                    .withStyle("padding-top: 25px; padding-bottom: 25px;")
+                                                    .with(
+                                                            join(
+                                                                    label("Choose video from the options below")
+                                                                            .withStyle("font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-weight: 600; color:#fae800; font-style:italic;")
+                                                                            .attr("for=\"select_element\""),
+                                                                    select()
+                                                                            .withName("select_element")
+                                                                            .withId("select_element")
+                                                                            .withStyle("border-color: #fae800; background-color: #2a2a2a; font-family: Segoe, 'Segoe UI', 'DejaVu Sans', 'Trebuchet MS', Verdana, 'sans-serif'; font-size: 14px; color: #FEFEFE; padding: 10px; width: 100%; margin-top: 12.5px;")
+                                                                            .attr("onChange=\"show_video(event)\"")
+                                                                            .with(
+                                                                                    categoryList.stream().map(category -> optgroup()
+                                                                                            .attr("label=\"" + category.getName() + "\"")
+                                                                                            .with(
+                                                                                                    get_media_from_category(category.getMedia()).stream().map(media -> option()
+                                                                                                            .withValue(String.format("http://%s:4567%s/watch/trailer/%s/%s", get_myAddress(), CONTEXT_PATH, category.getName(), media.getKey()))
+                                                                                                            .withText(media.getValue())
+                                                                                                    ).toArray(ContainerTag[]::new)
+                                                                                            )
+                                                                                    ).toArray(ContainerTag[]::new)
+                                                                            )
+                                                            )
+                                                    ),
+                                            script(rawHtml("var index;\n" +
+                                                    "\tfunction show_video(evt) {\n" +
+                                                    "\t\tdocument.querySelector(\"#videoElement > source\").src = evt.target.value;\n" +
+                                                    "\t\tdocument.getElementById(\"videoElement\").load();\n" +
+                                                    "\t\tvar cbx =  document.getElementById(\"select_element\");\n" +
+                                                    "\t\tindex = cbx.selectedIndex;\n" +
+                                                    "\t\tvar op = cbx.options[index];\n" +
+                                                    "\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = op.text;\n" +
+                                                    "\t\tvar optGroup = op.parentNode;\n" +
+                                                    "\t\tdocument.getElementById(\"mediaCategory\").innerHTML = optGroup.label;\n" +
+                                                    "\t\t\n" +
+                                                    "\t\tdocument.getElementById(\"videoElement\").onended = function () {\n" +
+                                                    "\t\t\tindex = (index + 1);\n" +
+                                                    "\t\t\tvar next_op = cbx.options[index];\n" +
+                                                    "\t\t\tdocument.querySelector(\"#videoElement > source\").src = next_op.value;\n" +
+                                                    "\t\t    document.getElementById(\"videoElement\").load();\n" +
+                                                    "\t\t\tdocument.getElementById(\"mediaNameLbl\").innerHTML = next_op.text;\n" +
+                                                    "\t\t\tvar next_optGroup = next_op.parentNode;\n" +
+                                                    "\t\t\tdocument.getElementById(\"mediaCategory\").innerHTML = next_optGroup.label;\n" +
+                                                    "\t\t\tdocument.getElementById(\"select_element\").options[index].selectedIndex = true;\n" +
+                                                    "\t\t};\t\n" +
+                                                    "\t}")).withType("text/javascript")
+                                    )).render();
         })));
 
         get(CONTEXT_PATH.concat("/"), (((request, response) -> {

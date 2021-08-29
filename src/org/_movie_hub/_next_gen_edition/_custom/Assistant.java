@@ -112,10 +112,10 @@ public abstract class Assistant {
         List<File> folderList = new ArrayList<>();
         if (parentFolder.isDirectory()) {
             if (!the_file_or_folder_has_zero_bytes(parentFolder)) {
-                for (File childFileOrFolder : parentFolder.listFiles()) {
+                for (File childFileOrFolder : Objects.requireNonNull(parentFolder.listFiles())) {
                     if (childFileOrFolder.isDirectory()) {
                         if (the_file_or_folder_has_zero_bytes(childFileOrFolder)) {
-                            folderList.addAll(get_sub_folders(childFileOrFolder));
+                            return get_sub_folders(childFileOrFolder);
                         } else {
                             folderList.add(childFileOrFolder);
                         }
@@ -139,15 +139,13 @@ public abstract class Assistant {
     }
 
     protected JsonObject get_details_about_number_of_seasons_and_episodes_of_a_series(File folder) {
-        int seasons, episodes = 0;
+        int seasons = 1, episodes = get_number_of_valid_episodes(folder);
+
         List<File> subFolders = get_sub_folders(folder);
-        if (subFolders.isEmpty()) {
-            seasons = get_number_of_seasons(folder);
-            episodes = get_number_of_valid_episodes(folder);
-        } else {
+        if (subFolders.size() > 0) {
             seasons = subFolders.size();
-            for (File subFolder : subFolders) {
-                episodes += get_number_of_valid_episodes(subFolder);
+            for (File file : subFolders) {
+                episodes += get_number_of_valid_episodes(file);
             }
         }
 

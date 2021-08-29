@@ -3,20 +3,37 @@
     <output-path>$PROJECT_DIR$/out/artifacts/Next_Gen_Edition</output-path>
     <properties id="javafx-properties">
       <options>
+        <option name="alias" value="" />
         <option name="appClass" value="org._movie_hub._next_gen_edition.Main" />
         <option name="convertCss2Bin" value="true" />
+        <option name="customManifestAttributes">
+          <list />
+        </option>
         <option name="description" value="Movie shop edition.&#10;In version 2 point Oh clients can access a web their portal via the web." />
         <option name="enabledSigning" value="true" />
+        <option name="height" value="400" />
+        <option name="htmlParamFile" />
         <option name="htmlPlaceholderId" value="" />
+        <option name="htmlTemplateFile" />
         <option name="icons">
           <JavaFxApplicationIcons>
+            <option name="linuxIcon" value="$PROJECT_DIR$/src/org/_movie_hub/_next_gen_edition/resources/_images/myIco_x1.png" />
+            <option name="macIcon" />
             <option name="windowsIcon" value="$PROJECT_DIR$/_configuration/nextGen_x4.ico" />
           </JavaFxApplicationIcons>
         </option>
+        <option name="keypass" />
+        <option name="keystore" value="" />
+        <option name="msgOutputLevel" value="Default" />
         <option name="nativeBundle" value="all" />
+        <option name="paramFile" />
+        <option name="selfSigning" value="true" />
+        <option name="storepass" />
         <option name="title" value="Next Gen Edition" />
+        <option name="updateMode" value="background" />
         <option name="vendor" value="Mandela Murithi" />
-        <option name="version" value="2.0.0" />
+        <option name="version" value="2.1.1" />
+        <option name="width" value="600" />
       </options>
     </properties>
     <root id="root">
@@ -29,14 +46,14 @@
         <element id="library" level="application" name="controlsfx-8.40.11" />
         <element id="library" level="application" name="EMAIL" />
         <element id="library" level="application" name="fontawesomefx-8.9" />
-        <element id="library" level="application" name="GEN RANDOM WORDS" />
         <element id="library" level="application" name="gson-2.8.2" />
         <element id="library" level="application" name="jfoenix-8.0.8" />
         <element id="library" level="application" name="json-simple-3.0.2" />
-        <element id="library" level="application" name="spark-core 2.9.1 maven" />
-        <element id="library" level="application" name="SL4J" />
         <element id="library" level="application" name="zxing from maven" />
         <element id="library" level="application" name="j2html-1.4.0" />
+        <element id="library" level="application" name="slf4j" />
+        <element id="library" level="application" name="spark-core JAR 2.9" />
+        <element id="library" level="application" name="commons-lang3-3.11" />
       </element>
     </root>
   </artifact>

@@ -153,10 +153,7 @@ public class Home extends Email implements Initializable {
                  * transferred and used
                  * */
                 Dragboard dragboard = dragEvent.getDragboard();
-                boolean itsComplete = false;
-                if (dragboard.hasFiles()) {
-                    itsComplete = true;
-                }
+                boolean itsComplete = dragboard.hasFiles();
                 dragEvent.setDropCompleted(itsComplete);
             }
             dragEvent.consume();

@@ -108,8 +108,9 @@ public class SplashScreen extends Watchdog implements Initializable {
     private @NotNull Runnable start_my_ip_server_app() {
         return () -> {
             try {
+                String pathToAppInLinux = "/opt/Address/Address";
                 ProcessBuilder processBuilder = new ProcessBuilder();
-                processBuilder.command(format_path_name_to_current_os(get_slash_for_my_os().equals(OperatingSystem.WINDOWS.getOs()) ? Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Address\\").concat("Address.exe") : ((new File("/opt/Address/Address")).exists() ? "/opt/Address/Address" : "")));
+                processBuilder.command(get_slash_for_my_os().equals(OperatingSystem.WINDOWS.getOs()) ? Main.RESOURCE_PATH.getParentFile().getAbsolutePath().concat("\\_support\\Address\\Address.exe") : ((new File(pathToAppInLinux)).exists() ? pathToAppInLinux : ""));
                 processBuilder.redirectErrorStream(true);
                 Main.process = processBuilder.start();
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(Main.process.getInputStream()));
@@ -119,7 +120,7 @@ public class SplashScreen extends Watchdog implements Initializable {
                     if (someText == null) {
                         break;
                     }
-                    new Thread(write_log("cmd:// attempting to start ip address provider.\n".concat(someText), null)).start();
+                    new Thread(write_log("cmd:// attempting to start ip address provider.\n".concat(someText).concat("\n"), null)).start();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -133,7 +134,7 @@ public class SplashScreen extends Watchdog implements Initializable {
     @Contract(value = " -> new", pure = true)
     private Task<Object> loading_progress() {
         final String[] appInfo = new String[]{"Please wait as i freshen up :)",
-                "Version 1. 0. 0",
+                "Version 2. 1. 0",
                 "I was designed and developed by < puum . inc ( ) / >",
                 "The server has been switched on",
                 "Almost done..."};
